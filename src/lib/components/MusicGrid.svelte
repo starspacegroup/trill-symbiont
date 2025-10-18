@@ -12,7 +12,12 @@
 	
 	// Grid state
 	let activeSquares: boolean[] = Array(TOTAL_SQUARES).fill(false);
-	let audioNodes: (OscillatorNode | null)[] = Array(TOTAL_SQUARES).fill(null);
+	let audioNodes: ({
+		primaryOsc: OscillatorNode;
+		secondaryOsc: OscillatorNode;
+		lfo: OscillatorNode;
+		squareGain: GainNode;
+	} | null)[] = Array(TOTAL_SQUARES).fill(null);
 	
 	// Evolution and timing
 	let evolutionInterval: number | null = null;
@@ -51,16 +56,20 @@
 	}
 	
 	// Create ambient sound for a square
-	function createAmbientSound(index: number): OscillatorNode | null {
+	function createAmbientSound(index: number): {
+		primaryOsc: OscillatorNode;
+		secondaryOsc: OscillatorNode;
+		lfo: OscillatorNode;
+		squareGain: GainNode;
+	} | null {
 		if (!audioContext || !masterGain) return null;
 		
-		// Create multiple oscillators for richer sound
-		const oscillators: OscillatorNode[] = [];
-		const gainNodes: GainNode[] = [];
+		// Create square-specific gain node for unified control
+		const squareGain = audioContext.createGain();
+		squareGain.gain.value = 0.05;
 		
 		// Primary oscillator
 		const primaryOsc = audioContext.createOscillator();
-		const primaryGain = audioContext.createGain();
 		const primaryFilter = audioContext.createBiquadFilter();
 		
 		// Set frequency based on position (musical scale)
@@ -73,21 +82,14 @@
 		primaryFilter.frequency.setValueAtTime(600 + (index * 30), audioContext.currentTime);
 		primaryFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
 		
-		primaryGain.gain.setValueAtTime(0, audioContext.currentTime);
-		primaryGain.gain.linearRampToValueAtTime(0.05, audioContext.currentTime + 1);
-		
 		// Secondary oscillator for harmonic content
 		const secondaryOsc = audioContext.createOscillator();
-		const secondaryGain = audioContext.createGain();
 		const secondaryFilter = audioContext.createBiquadFilter();
 		
 		secondaryOsc.frequency.setValueAtTime(baseFrequency * 1.5, audioContext.currentTime);
 		secondaryOsc.type = 'sine';
 		secondaryFilter.type = 'highpass';
 		secondaryFilter.frequency.setValueAtTime(200, audioContext.currentTime);
-		
-		secondaryGain.gain.setValueAtTime(0, audioContext.currentTime);
-		secondaryGain.gain.linearRampToValueAtTime(0.02, audioContext.currentTime + 1.5);
 		
 		// LFO for subtle modulation
 		const lfo = audioContext.createOscillator();
@@ -101,43 +103,53 @@
 		lfo.connect(lfoGain);
 		lfoGain.connect(primaryOsc.frequency);
 		
-		// Connect primary chain
+		// Connect primary chain to square gain
 		primaryOsc.connect(primaryFilter);
-		primaryFilter.connect(primaryGain);
-		primaryGain.connect(masterGain);
+		primaryFilter.connect(squareGain);
 		
-		// Connect secondary chain
+		// Connect secondary chain to square gain
 		secondaryOsc.connect(secondaryFilter);
-		secondaryFilter.connect(secondaryGain);
-		secondaryGain.connect(masterGain);
+		secondaryFilter.connect(squareGain);
+		
+		// Connect square gain to master
+		squareGain.connect(masterGain);
 		
 		// Start oscillators
 		primaryOsc.start();
 		secondaryOsc.start();
 		lfo.start();
 		
-		// Store all oscillators for cleanup
-		oscillators.push(primaryOsc, secondaryOsc, lfo);
-		
-		// Return primary oscillator as reference
-		return primaryOsc;
+		// Return all components for cleanup
+		return {
+			primaryOsc,
+			secondaryOsc,
+			lfo,
+			squareGain
+		};
 	}
 	
 	// Stop ambient sound
-	function stopAmbientSound(oscillator: OscillatorNode | null, index: number) {
-		if (!oscillator || !audioContext) return;
+	function stopAmbientSound(components: {
+		primaryOsc: OscillatorNode;
+		secondaryOsc: OscillatorNode;
+		lfo: OscillatorNode;
+		squareGain: GainNode;
+	} | null, index: number) {
+		if (!components || !audioContext) return;
 		
-		const gainNode = oscillator.context.createGain();
-		gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-		gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 1);
+		// Fade out the square's gain over 3 seconds
+		components.squareGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 3);
 		
+		// Stop all oscillators after fade completes
 		setTimeout(() => {
 			try {
-				oscillator.stop();
+				components.primaryOsc.stop();
+				components.secondaryOsc.stop();
+				components.lfo.stop();
 			} catch (e) {
-				// Oscillator might already be stopped
+				// Oscillators might already be stopped
 			}
-		}, 1000);
+		}, 3000);
 	}
 	
 	// Toggle square state
@@ -232,13 +244,15 @@
 		}
 		
 		// Stop all audio nodes immediately and reset audio state
-		audioNodes.forEach((node, index) => {
-			if (node) {
+		audioNodes.forEach((components, index) => {
+			if (components) {
 				try {
-					// Stop oscillator immediately without fade out
-					node.stop();
+					// Stop oscillators immediately without fade out
+					components.primaryOsc.stop();
+					components.secondaryOsc.stop();
+					components.lfo.stop();
 				} catch (e) {
-					// Oscillator might already be stopped
+					// Oscillators might already be stopped
 				}
 				audioNodes[index] = null;
 			}
@@ -291,8 +305,22 @@
 		}
 	});
 </script>
+	
+	<div class="grid grid-cols-8 gap-2 max-w-2xl mx-auto p-4 bg-gray-800 rounded-xl">
+		{#each Array(TOTAL_SQUARES) as _, index}
+			<button
+				on:click={() => toggleSquare(index)}
+				class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index] 
+					? 'bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/50' 
+					: 'bg-gray-700 hover:bg-gray-600'}"
+				aria-label="Square {index + 1}"
+			>
+				<div class="w-full h-full rounded-lg {activeSquares[index] ? 'animate-bounce' : ''}"></div>
+			</button>
+		{/each}
+	</div>
 
-<div class="max-w-4xl mx-auto">
+	<div class="max-w-4xl mx-auto">
 	<div class="mb-6 text-center space-y-4">
 		<div>
 			<button
@@ -342,20 +370,6 @@
 			/>
 			<span class="text-sm text-gray-400">{evolutionSpeed}ms</span>
 		</div>
-	</div>
-	
-	<div class="grid grid-cols-8 gap-2 max-w-2xl mx-auto p-4 bg-gray-800 rounded-xl">
-		{#each Array(TOTAL_SQUARES) as _, index}
-			<button
-				on:click={() => toggleSquare(index)}
-				class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index] 
-					? 'bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/50' 
-					: 'bg-gray-700 hover:bg-gray-600'}"
-				aria-label="Square {index + 1}"
-			>
-				<div class="w-full h-full rounded-lg {activeSquares[index] ? 'animate-bounce' : ''}"></div>
-			</button>
-		{/each}
 	</div>
 	
 	<div class="mt-6 text-center text-gray-400">
