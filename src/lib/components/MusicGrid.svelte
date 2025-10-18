@@ -361,8 +361,8 @@
 			<label class="text-sm text-gray-300">Evolution Speed:</label>
 			<input
 				type="range"
-				min="500"
-				max="5000"
+				min="32"
+				max="9001"
 				step="100"
 				value={evolutionSpeed}
 				on:input={(e) => updateEvolutionSpeed(parseInt(e.currentTarget.value))}
