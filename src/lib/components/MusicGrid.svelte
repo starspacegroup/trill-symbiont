@@ -1,6 +1,13 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	
+	// Props for circle of fifths integration
+	export let selectedKey = 'C';
+	export let selectedScale = 'major';
+	export let scaleFrequencies: number[] = [];
+	export let isSynchronized = false;
+	export let currentChord = 'I';
+	
 	// Grid configuration
 	const GRID_SIZE = 8;
 	const TOTAL_SQUARES = GRID_SIZE * GRID_SIZE;
@@ -63,7 +70,7 @@
 	};
 	
 	// Musical parameters
-	const baseFrequencies = [
+	let baseFrequencies = [
 		130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94, 261.63, // C3-C4
 		146.83, 164.81, 174.61, 196.00, 220.00, 246.94, 261.63, 293.66, // D3-D4
 		164.81, 174.61, 196.00, 220.00, 246.94, 261.63, 293.66, 329.63, // E3-E4
@@ -111,9 +118,18 @@
 		// Get current controls for this square
 		const controls = oscillatorControls[index];
 		
-		// Set frequency based on position (musical scale) with control multiplier
-		const baseFrequency = baseFrequencies[index] || 200 + (index * 10);
-		primaryOsc.frequency.setValueAtTime(baseFrequency * controls.primaryFreq, audioContext.currentTime);
+		// Set frequency based on synchronization mode
+		let baseFrequency: number;
+		if (isSynchronized && scaleFrequencies.length > 0) {
+			// Use scale frequencies from circle of fifths
+			const scaleIndex = index % scaleFrequencies.length;
+			baseFrequency = scaleFrequencies[scaleIndex];
+		} else {
+			// Use original grid frequencies
+			baseFrequency = baseFrequencies[index] || 200 + (index * 10);
+		}
+		
+		primaryOsc.frequency.setValueAtTime(baseFrequency * controls.primaryFreq, audioContext!.currentTime);
 		primaryOsc.type = controls.primaryWave;
 		
 		// Create ambient envelope for primary
@@ -125,7 +141,8 @@
 		const secondaryOsc = audioContext.createOscillator();
 		const secondaryFilter = audioContext.createBiquadFilter();
 		
-		secondaryOsc.frequency.setValueAtTime(baseFrequency * controls.secondaryFreq, audioContext.currentTime);
+		// Use the same base frequency for secondary oscillator
+		secondaryOsc.frequency.setValueAtTime(baseFrequency * controls.secondaryFreq, audioContext!.currentTime);
 		secondaryOsc.type = controls.secondaryWave;
 		secondaryFilter.type = 'highpass';
 		secondaryFilter.frequency.setValueAtTime(200, audioContext.currentTime);
@@ -134,9 +151,9 @@
 		const lfo = audioContext.createOscillator();
 		const lfoGain = audioContext.createGain();
 		
-		lfo.frequency.setValueAtTime(controls.lfoFreq, audioContext.currentTime);
+		lfo.frequency.setValueAtTime(controls.lfoFreq, audioContext!.currentTime);
 		lfo.type = controls.lfoWave;
-		lfoGain.gain.setValueAtTime(controls.lfoGain, audioContext.currentTime);
+		lfoGain.gain.setValueAtTime(controls.lfoGain, audioContext!.currentTime);
 		
 		// Connect LFO to primary oscillator frequency
 		lfo.connect(lfoGain);
@@ -180,7 +197,7 @@
 		if (!components || !audioContext) return;
 		
 		// Fade out the square's gain over 3 seconds
-		components.squareGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 3);
+		components.squareGain.gain.linearRampToValueAtTime(0, audioContext!.currentTime + 3);
 		
 		// Stop all oscillators after fade completes
 		setTimeout(() => {
@@ -351,28 +368,42 @@
 		try {
 			switch (param) {
 				case 'primaryFreq':
+					let baseFreq: number;
+					if (isSynchronized && scaleFrequencies.length > 0) {
+						const scaleIndex = index % scaleFrequencies.length;
+						baseFreq = scaleFrequencies[scaleIndex];
+					} else {
+						baseFreq = baseFrequencies[index] || 200 + (index * 10);
+					}
 					components.primaryOsc.frequency.setValueAtTime(
-						(baseFrequencies[index] || 200 + (index * 10)) * value,
-						audioContext.currentTime
+						baseFreq * value,
+						audioContext!.currentTime
 					);
 					break;
 				case 'primaryWave':
 					components.primaryOsc.type = value;
 					break;
 				case 'primaryGain':
-					components.squareGain.gain.setValueAtTime(0.05 * value, audioContext.currentTime);
+					components.squareGain.gain.setValueAtTime(0.05 * value, audioContext!.currentTime);
 					break;
 				case 'secondaryFreq':
+					let baseFreq2: number;
+					if (isSynchronized && scaleFrequencies.length > 0) {
+						const scaleIndex = index % scaleFrequencies.length;
+						baseFreq2 = scaleFrequencies[scaleIndex];
+					} else {
+						baseFreq2 = baseFrequencies[index] || 200 + (index * 10);
+					}
 					components.secondaryOsc.frequency.setValueAtTime(
-						(baseFrequencies[index] || 200 + (index * 10)) * value,
-						audioContext.currentTime
+						baseFreq2 * value,
+						audioContext!.currentTime
 					);
 					break;
 				case 'secondaryWave':
 					components.secondaryOsc.type = value;
 					break;
 				case 'lfoFreq':
-					components.lfo.frequency.setValueAtTime(value, audioContext.currentTime);
+					components.lfo.frequency.setValueAtTime(value, audioContext!.currentTime);
 					break;
 				case 'lfoWave':
 					components.lfo.type = value;
@@ -456,6 +487,52 @@
 			audioContext.close();
 		}
 	});
+	
+	// Reactive statement to update frequencies when synchronization changes
+	$: if (isSynchronized && scaleFrequencies.length > 0) {
+		// Update frequencies for all active squares
+		if (audioContext && isAudioInitialized) {
+			audioNodes.forEach((components, index) => {
+				if (components && activeSquares[index]) {
+					const controls = oscillatorControls[index];
+					const scaleIndex = index % scaleFrequencies.length;
+					const baseFreq = scaleFrequencies[scaleIndex];
+					
+					try {
+						components.primaryOsc.frequency.setValueAtTime(
+							baseFreq * controls.primaryFreq,
+							audioContext!.currentTime
+						);
+						components.secondaryOsc.frequency.setValueAtTime(
+							baseFreq * controls.secondaryFreq,
+							audioContext!.currentTime
+						);
+					} catch (e) {
+						console.warn('Failed to update frequency:', e);
+					}
+				}
+			});
+		}
+	}
+	
+	// Get current chord frequencies for display
+	function getCurrentChordFrequencies(): number[] {
+		if (!isSynchronized || scaleFrequencies.length === 0) return [];
+		
+		// Simple chord mapping based on current chord
+		const chordMap: Record<string, number[]> = {
+			'I': [0, 2, 4], // Root, 3rd, 5th
+			'ii': [1, 3, 5], // 2nd, 4th, 6th
+			'iii': [2, 4, 6], // 3rd, 5th, 7th
+			'IV': [3, 5, 0], // 4th, 6th, root
+			'V': [4, 6, 1], // 5th, 7th, 2nd
+			'vi': [5, 0, 2], // 6th, root, 3rd
+			'vii°': [6, 1, 3] // 7th, 2nd, 4th
+		};
+		
+		const chordIndices = chordMap[currentChord] || [0, 2, 4];
+		return chordIndices.map(i => scaleFrequencies[i % scaleFrequencies.length]);
+	}
 </script>
 
 <style>
@@ -544,6 +621,26 @@
 				{isAudioInitialized ? 'Audio Ready' : 'Enable Audio'}
 			</button>
 		</div>
+		
+		{#if isSynchronized && scaleFrequencies.length > 0}
+		<div class="synchronization-info">
+			<div class="sync-status">
+				<span class="sync-icon">🎵</span>
+				<span>Synchronized to {selectedKey} {selectedScale}</span>
+			</div>
+			{#if currentChord}
+			<div class="chord-info">
+				<span class="chord-label">Current Chord:</span>
+				<span class="chord-name">{currentChord}</span>
+				<div class="chord-frequencies">
+					{#each getCurrentChordFrequencies() as freq}
+						<span class="freq-badge">{freq.toFixed(1)}Hz</span>
+					{/each}
+				</div>
+			</div>
+			{/if}
+		</div>
+		{/if}
 		
 		<div class="flex flex-wrap justify-center gap-4">
 			<button
