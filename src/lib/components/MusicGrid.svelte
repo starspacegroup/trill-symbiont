@@ -17,7 +17,7 @@
 	// Evolution and timing
 	let evolutionInterval: number | null = null;
 	let isEvolving = false;
-	let evolutionSpeed = 2000; // milliseconds
+	let evolutionSpeed = 42; // milliseconds
 	let currentStep = 0;
 	let maxSteps = 16;
 	
