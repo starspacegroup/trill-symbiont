@@ -90,7 +90,7 @@
 		try {
 			audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 			masterGain = audioContext.createGain();
-			masterGain.gain.value = 0.3;
+			masterGain.gain.value = 1.8;
 			masterGain.connect(audioContext.destination);
 			isAudioInitialized = true;
 		} catch (error) {
@@ -419,6 +419,8 @@
 		// Force reactivity update for color changes
 		// This ensures the colors update in real-time when audio parameters change
 		activeSquares = [...activeSquares];
+		// Also trigger reactivity on oscillator controls to update colors
+		oscillatorControls = [...oscillatorControls];
 	}
 	
 	// Reset oscillator controls to defaults
@@ -519,6 +521,13 @@
 		}
 	}
 	
+	// Reactive statement to update colors when oscillator parameters change
+	$: if (oscillatorControls && activeSquares.some(Boolean)) {
+		// This reactive statement ensures colors update when any oscillator parameter changes
+		// The colors are calculated in the template, but this forces reactivity
+		activeSquares = [...activeSquares];
+	}
+	
 	// Get current chord frequencies for display
 	function getCurrentChordFrequencies(): number[] {
 		if (!isSynchronized || scaleFrequencies.length === 0) return [];
@@ -545,7 +554,7 @@
 		// High frequencies (treble) -> cool colors (blue/purple)
 		const minFreq = 130;
 		const maxFreq = 523;
-		const normalizedFreq = Math.max(0, Math.min(1, (frequency - minFreq) / (maxFreq - minFreq)));
+		const normalizedFreq = Math.max(50, Math.min(1, (frequency - minFreq) / (maxFreq - minFreq)));
 		
 		// Map to hue: 0-60 (red-orange) for low, 240-300 (blue-purple) for high
 		const hue = normalizedFreq * 300; // 0-300 degrees covers red to purple
@@ -583,7 +592,7 @@
 		const primaryColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 		const secondaryColor = `hsl(${(hue + 30) % 360}, ${saturation - 20}%, ${lightness - 10}%)`;
 		
-		return `bg-gradient-to-br from-[${primaryColor}] to-[${secondaryColor}] shadow-lg shadow-${primaryColor}/50`;
+		return `bg-gradient-to-br from-[${primaryColor}] to-[${secondaryColor}] shadow-lg`;
 	}
 
 	function getSquareShadowColor(index: number): string {
@@ -620,13 +629,17 @@
 	function getSaturation(index: number): number {
 		if (!activeSquares[index]) return 0;
 		const volume = oscillatorControls[index].primaryGain;
-		return 60 + (volume * 40); // 60-100% saturation based on volume
+		const saturation = 70 + (volume * 30); // 70-100% saturation based on volume
+		console.log(`Square ${index}: Volume ${volume} -> Saturation ${saturation}%`);
+		return saturation;
 	}
 
 	function getLightness(index: number): number {
 		if (!activeSquares[index]) return 0;
 		const volume = oscillatorControls[index].primaryGain;
-		return 40 + (volume * 30); // 40-100% lightness based on volume
+		const lightness = 50 + (volume * 40); // 50-90% lightness based on volume
+		console.log(`Square ${index}: Volume ${volume} -> Lightness ${lightness}%`);
+		return lightness;
 	}
 </script>
 
@@ -689,27 +702,48 @@
 		border-color: #3b82f6;
 		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 	}
+
+	/* Ensure proper color display for active squares */
+	:global(.animate-bounce) {
+		animation: bounce 1s infinite;
+	}
+
+	@keyframes bounce {
+		0%, 100% { transform: translateY(0); }
+		50% { transform: translateY(-10%); }
+	}
+
+	/* Ensure gradient backgrounds are visible */
+	button[style*="background: linear-gradient"] {
+		background-blend-mode: normal !important;
+	}
 </style>
 	
 	<div class="grid grid-cols-8 gap-2 max-w-2xl mx-auto p-4 bg-gray-800 rounded-xl">
 		{#each Array(TOTAL_SQUARES) as _, index}
 			{@const currentFreq = getCurrentFrequency(index)}
 			{@const hue = frequencyToHue(currentFreq)}
-			{@const saturation = getSaturation(index)}
-			{@const lightness = getLightness(index)}
-			{@const primaryColor = activeSquares[index] ? `hsl(${hue}, ${saturation}%, ${lightness}%)` : ''}
-			{@const secondaryColor = activeSquares[index] ? `hsl(${(hue + 30) % 360}, ${saturation - 20}%, ${lightness - 10}%)` : ''}
+			{@const saturation = 100}
+			{@const lightness = 50}
+			{@const primaryColor = 99}
+			{@const secondaryColor = 99}
+			<!-- {@const primaryColor = activeSquares[index] ? `hsl(${hue}, ${saturation}%, ${lightness}%)` : ''} -->
+			<!-- {@const secondaryColor = activeSquares[index] ? `hsl(${(hue + 30) % 360}, ${saturation - 20}%, ${lightness - 10}%)` : ''} -->
+			{@const debugInfo = activeSquares[index] ? `Square ${index}: Freq=${currentFreq.toFixed(1)}Hz, Hue=${hue.toFixed(1)}°, Sat=${saturation}%, Light=${lightness}%, Primary=${primaryColor}` : ''}
+			{#if activeSquares[index]}
+				{console.log(debugInfo)}
+			{/if}
 			<button
 				on:click={() => toggleSquare(index)}
 				class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index]
-					? 'shadow-lg'
+					? 'shadow-lg border-2'
 					: 'bg-gray-700 hover:bg-gray-600'}"
 				aria-label="Square {index + 1}"
 				style="{activeSquares[index]
-					? `background: linear-gradient(to bottom right, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 20px ${primaryColor}50;`
+					? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
 					: ''}"
 			>
-				<div class="w-full h-full rounded-lg {activeSquares[index] ? 'animate-bounce' : ''}"></div>
+				<div class="w-full h-full rounded-lg transition-all duration-75 {activeSquares[index] ? 'animate-bounce bg-pink-600' : ''}" style="{activeSquares[index] ? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});` : ''}"></div>
 			</button>
 		{/each}
 	</div>

@@ -96,26 +96,41 @@
 		</div>
 		{/if}
 		
-		<!-- Circle of Fifths Controls -->
-		<div class="max-w-4xl mx-auto mb-8">
-			<div class="flex flex-col lg:flex-row gap-6 items-center justify-between">
-				<div class="flex-1">
-					<CircleOfFifths
-						{selectedKey}
-						{selectedScale}
-						{selectedChord}
-						{isSynchronized}
-						on:keyChange={handleKeyChange}
-						on:scaleChange={handleScaleChange}
-						on:chordChange={handleChordChange}
-					/>
-				</div>
+		<div class="flex flex-col lg:flex-row gap-8">
+			<div>
 				
-				<div class="flex flex-col gap-4">
-					<button
+				<!-- Music Grid -->
+				<MusicGrid
+				{selectedKey}
+				{selectedScale}
+				{scaleFrequencies}
+				{isSynchronized}
+				currentChord={selectedChord}
+				/>
+			</div>
+			
+			<div>
+				
+				<!-- Circle of Fifths Controls -->
+				<div class="max-w-4xl mx-auto mb-8">
+					<div class="flex flex-col lg:flex-row gap-6 items-center justify-between">
+						<div class="flex-1">
+							<CircleOfFifths
+							{selectedKey}
+							{selectedScale}
+							{selectedChord}
+							{isSynchronized}
+							on:keyChange={handleKeyChange}
+							on:scaleChange={handleScaleChange}
+							on:chordChange={handleChordChange}
+						/>
+					</div>
+				
+					<div class="flex flex-col gap-4">
+						<button
 						on:click={toggleSynchronization}
 						class="px-8 py-4 rounded-lg font-medium transition-colors {isSynchronized ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-lg"
-					>
+						>
 					{isSynchronized ? 'Synchronized to Key' : 'Free Mode'}
 					</button>
 					
@@ -130,15 +145,9 @@
 				</div>
 			</div>
 		</div>
+	</div>
 		
-		<!-- Music Grid -->
-		<MusicGrid
-			{selectedKey}
-			{selectedScale}
-			{scaleFrequencies}
-			{isSynchronized}
-			currentChord={selectedChord}
-		/>
+	</div>
 	</div>
 </main>
 
