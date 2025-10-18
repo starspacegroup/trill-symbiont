@@ -26,6 +26,29 @@
 	let currentStep = 0;
 	let maxSteps = 16;
 	
+	// Oscillator controls for each square
+	let oscillatorControls: Array<{
+		primaryFreq: number;
+		primaryWave: OscillatorType;
+		primaryGain: number;
+		secondaryFreq: number;
+		secondaryWave: OscillatorType;
+		secondaryGain: number;
+		lfoFreq: number;
+		lfoWave: OscillatorType;
+		lfoGain: number;
+	}> = Array(TOTAL_SQUARES).fill(null).map(() => ({
+		primaryFreq: 1.0,
+		primaryWave: 'sine',
+		primaryGain: 1.0,
+		secondaryFreq: 1.5,
+		secondaryWave: 'sine',
+		secondaryGain: 0.5,
+		lfoFreq: 0.2,
+		lfoWave: 'sine',
+		lfoGain: 10
+	}));
+	
 	// Musical parameters
 	const baseFrequencies = [
 		130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94, 261.63, // C3-C4
@@ -66,16 +89,19 @@
 		
 		// Create square-specific gain node for unified control
 		const squareGain = audioContext.createGain();
-		squareGain.gain.value = 0.05;
+		squareGain.gain.value = 0.05 * oscillatorControls[index].primaryGain;
 		
 		// Primary oscillator
 		const primaryOsc = audioContext.createOscillator();
 		const primaryFilter = audioContext.createBiquadFilter();
 		
-		// Set frequency based on position (musical scale)
+		// Get current controls for this square
+		const controls = oscillatorControls[index];
+		
+		// Set frequency based on position (musical scale) with control multiplier
 		const baseFrequency = baseFrequencies[index] || 200 + (index * 10);
-		primaryOsc.frequency.setValueAtTime(baseFrequency, audioContext.currentTime);
-		primaryOsc.type = waveTypes[index % waveTypes.length];
+		primaryOsc.frequency.setValueAtTime(baseFrequency * controls.primaryFreq, audioContext.currentTime);
+		primaryOsc.type = controls.primaryWave;
 		
 		// Create ambient envelope for primary
 		primaryFilter.type = 'lowpass';
@@ -86,8 +112,8 @@
 		const secondaryOsc = audioContext.createOscillator();
 		const secondaryFilter = audioContext.createBiquadFilter();
 		
-		secondaryOsc.frequency.setValueAtTime(baseFrequency * 1.5, audioContext.currentTime);
-		secondaryOsc.type = 'sine';
+		secondaryOsc.frequency.setValueAtTime(baseFrequency * controls.secondaryFreq, audioContext.currentTime);
+		secondaryOsc.type = controls.secondaryWave;
 		secondaryFilter.type = 'highpass';
 		secondaryFilter.frequency.setValueAtTime(200, audioContext.currentTime);
 		
@@ -95,9 +121,9 @@
 		const lfo = audioContext.createOscillator();
 		const lfoGain = audioContext.createGain();
 		
-		lfo.frequency.setValueAtTime(0.2 + (index * 0.05), audioContext.currentTime);
-		lfo.type = 'sine';
-		lfoGain.gain.setValueAtTime(10, audioContext.currentTime);
+		lfo.frequency.setValueAtTime(controls.lfoFreq, audioContext.currentTime);
+		lfo.type = controls.lfoWave;
+		lfoGain.gain.setValueAtTime(controls.lfoGain, audioContext.currentTime);
 		
 		// Connect LFO to primary oscillator frequency
 		lfo.connect(lfoGain);
@@ -107,9 +133,12 @@
 		primaryOsc.connect(primaryFilter);
 		primaryFilter.connect(squareGain);
 		
-		// Connect secondary chain to square gain
+		// Connect secondary chain to square gain with gain control
+		const secondaryGain = audioContext.createGain();
+		secondaryGain.gain.value = 0.05 * oscillatorControls[index].secondaryGain;
 		secondaryOsc.connect(secondaryFilter);
-		secondaryFilter.connect(squareGain);
+		secondaryFilter.connect(secondaryGain);
+		secondaryGain.connect(squareGain);
 		
 		// Connect square gain to master
 		squareGain.connect(masterGain);
@@ -291,6 +320,72 @@
 		}
 	}
 	
+	// Update oscillator parameters in real-time
+	function updateOscillatorControl(index: number, param: string, value: any) {
+		if (!audioContext || !audioNodes[index]) return;
+		
+		// Update the control value
+		const newControls = [...oscillatorControls];
+		(newControls[index] as any)[param] = value;
+		oscillatorControls = newControls;
+		
+		const components = audioNodes[index];
+		if (!components) return;
+		
+		try {
+			switch (param) {
+				case 'primaryFreq':
+					components.primaryOsc.frequency.setValueAtTime(
+						(baseFrequencies[index] || 200 + (index * 10)) * value,
+						audioContext.currentTime
+					);
+					break;
+				case 'primaryWave':
+					components.primaryOsc.type = value;
+					break;
+				case 'primaryGain':
+					components.squareGain.gain.setValueAtTime(0.05 * value, audioContext.currentTime);
+					break;
+				case 'secondaryFreq':
+					components.secondaryOsc.frequency.setValueAtTime(
+						(baseFrequencies[index] || 200 + (index * 10)) * value,
+						audioContext.currentTime
+					);
+					break;
+				case 'secondaryWave':
+					components.secondaryOsc.type = value;
+					break;
+				case 'lfoFreq':
+					components.lfo.frequency.setValueAtTime(value, audioContext.currentTime);
+					break;
+				case 'lfoWave':
+					components.lfo.type = value;
+					break;
+				case 'lfoGain':
+					// Find the LFO gain node (we need to store it)
+					break;
+			}
+		} catch (e) {
+			console.warn('Failed to update oscillator parameter:', e);
+		}
+	}
+	
+	// Reset oscillator controls to defaults
+	function resetOscillatorControls(index: number) {
+		oscillatorControls[index] = {
+			primaryFreq: 1.0,
+			primaryWave: 'sine',
+			primaryGain: 1.0,
+			secondaryFreq: 1.5,
+			secondaryWave: 'sine',
+			secondaryGain: 0.5,
+			lfoFreq: 0.2,
+			lfoWave: 'sine',
+			lfoGain: 10
+		};
+		oscillatorControls = [...oscillatorControls];
+	}
+	
 	// Cleanup on component destroy
 	onDestroy(() => {
 		stopEvolution();
@@ -305,6 +400,67 @@
 		}
 	});
 </script>
+
+<style>
+	/* Custom range input styling */
+	input[type="range"] {
+		-webkit-appearance: none;
+		appearance: none;
+		background: transparent;
+		cursor: pointer;
+	}
+
+	input[type="range"]::-webkit-slider-track {
+		background: #4b5563;
+		height: 8px;
+		border-radius: 4px;
+	}
+
+	input[type="range"]::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		background: #3b82f6;
+		height: 16px;
+		width: 16px;
+		border-radius: 50%;
+		cursor: pointer;
+	}
+
+	input[type="range"]::-webkit-slider-thumb:hover {
+		background: #2563eb;
+	}
+
+	input[type="range"]::-moz-range-track {
+		background: #4b5563;
+		height: 8px;
+		border-radius: 4px;
+		border: none;
+	}
+
+	input[type="range"]::-moz-range-thumb {
+		background: #3b82f6;
+		height: 16px;
+		width: 16px;
+		border-radius: 50%;
+		cursor: pointer;
+		border: none;
+	}
+
+	select {
+		background-color: #4b5563;
+		color: white;
+		border: 1px solid #6b7280;
+		border-radius: 4px;
+		padding: 4px 8px;
+		font-size: 12px;
+	}
+
+	select:focus {
+		outline: none;
+		border-color: #3b82f6;
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+	}
+</style>
 	
 	<div class="grid grid-cols-8 gap-2 max-w-2xl mx-auto p-4 bg-gray-800 rounded-xl">
 		{#each Array(TOTAL_SQUARES) as _, index}
@@ -392,4 +548,137 @@
 			</div>
 		</div>
 	</div>
+	
+	<!-- Oscillator Controls Panel -->
+	{#if activeSquares.some(Boolean)}
+	<div class="max-w-6xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl border border-gray-700">
+		<h3 class="text-xl font-bold text-white mb-4 text-center">Oscillator Controls</h3>
+		
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-96 overflow-y-auto">
+			{#each activeSquares as isActive, index}
+				{#if isActive}
+				<div class="bg-gray-700 rounded-lg p-4 border border-gray-600 min-w-64">
+					<h4 class="text-lg font-semibold text-blue-400 mb-3 text-center">Square {index + 1}</h4>
+					
+					<!-- Primary Oscillator Controls -->
+					<div class="mb-4">
+						<h5 class="text-sm font-medium text-gray-300 mb-2">Primary Oscillator</h5>
+						<div class="space-y-2">
+							<div>
+								<label class="text-xs text-gray-400 block mb-1">Frequency Multiplier</label>
+								<input
+									type="range"
+									min="0.1"
+									max="3.0"
+									step="0.1"
+									value={oscillatorControls[index].primaryFreq}
+									on:input={(e) => updateOscillatorControl(index, 'primaryFreq', parseFloat(e.currentTarget.value))}
+									class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+								/>
+								<span class="text-xs text-gray-500">{oscillatorControls[index].primaryFreq.toFixed(1)}x</span>
+							</div>
+							<div>
+								<label class="text-xs text-gray-400 block mb-1">Waveform</label>
+								<select
+									value={oscillatorControls[index].primaryWave}
+									on:change={(e) => updateOscillatorControl(index, 'primaryWave', e.currentTarget.value)}
+									class="w-full px-2 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+								>
+									{#each waveTypes as waveType}
+										<option value={waveType}>{waveType}</option>
+									{/each}
+								</select>
+							</div>
+							<div>
+								<label class="text-xs text-gray-400 block mb-1">Gain</label>
+								<input
+									type="range"
+									min="0.1"
+									max="2.0"
+									step="0.1"
+									value={oscillatorControls[index].primaryGain}
+									on:input={(e) => updateOscillatorControl(index, 'primaryGain', parseFloat(e.currentTarget.value))}
+									class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+								/>
+								<span class="text-xs text-gray-500">{oscillatorControls[index].primaryGain.toFixed(1)}</span>
+							</div>
+						</div>
+					</div>
+					
+					<!-- Secondary Oscillator Controls -->
+					<div class="mb-4">
+						<h5 class="text-sm font-medium text-gray-300 mb-2">Secondary Oscillator</h5>
+						<div class="space-y-2">
+							<div>
+								<label class="text-xs text-gray-400 block mb-1">Frequency Multiplier</label>
+								<input
+									type="range"
+									min="0.1"
+									max="4.0"
+									step="0.1"
+									value={oscillatorControls[index].secondaryFreq}
+									on:input={(e) => updateOscillatorControl(index, 'secondaryFreq', parseFloat(e.currentTarget.value))}
+									class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+								/>
+								<span class="text-xs text-gray-500">{oscillatorControls[index].secondaryFreq.toFixed(1)}x</span>
+							</div>
+							<div>
+								<label class="text-xs text-gray-400 block mb-1">Waveform</label>
+								<select
+									value={oscillatorControls[index].secondaryWave}
+									on:change={(e) => updateOscillatorControl(index, 'secondaryWave', e.currentTarget.value)}
+									class="w-full px-2 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+								>
+									{#each waveTypes as waveType}
+										<option value={waveType}>{waveType}</option>
+									{/each}
+								</select>
+							</div>
+						</div>
+					</div>
+					
+					<!-- LFO Controls -->
+					<div class="mb-4">
+						<h5 class="text-sm font-medium text-gray-300 mb-2">LFO (Low Frequency Oscillator)</h5>
+						<div class="space-y-2">
+							<div>
+								<label class="text-xs text-gray-400 block mb-1">Frequency (Hz)</label>
+								<input
+									type="range"
+									min="0.1"
+									max="5.0"
+									step="0.1"
+									value={oscillatorControls[index].lfoFreq}
+									on:input={(e) => updateOscillatorControl(index, 'lfoFreq', parseFloat(e.currentTarget.value))}
+									class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+								/>
+								<span class="text-xs text-gray-500">{oscillatorControls[index].lfoFreq.toFixed(1)} Hz</span>
+							</div>
+							<div>
+								<label class="text-xs text-gray-400 block mb-1">Waveform</label>
+								<select
+									value={oscillatorControls[index].lfoWave}
+									on:change={(e) => updateOscillatorControl(index, 'lfoWave', e.currentTarget.value)}
+									class="w-full px-2 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+								>
+									{#each waveTypes as waveType}
+										<option value={waveType}>{waveType}</option>
+									{/each}
+								</select>
+							</div>
+						</div>
+					</div>
+					
+					<button
+						on:click={() => resetOscillatorControls(index)}
+						class="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+					>
+						Reset to Defaults
+					</button>
+				</div>
+				{/if}
+			{/each}
+		</div>
+	</div>
+	{/if}
 </div>
