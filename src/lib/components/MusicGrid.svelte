@@ -49,6 +49,19 @@
 		lfoGain: 10
 	}));
 	
+	// Default settings for new square activations
+	let defaultOscillatorSettings = {
+		primaryFreq: 1.0,
+		primaryWave: 'sine' as OscillatorType,
+		primaryGain: 1.0,
+		secondaryFreq: 1.5,
+		secondaryWave: 'sine' as OscillatorType,
+		secondaryGain: 0.5,
+		lfoFreq: 0.2,
+		lfoWave: 'sine' as OscillatorType,
+		lfoGain: 10
+	};
+	
 	// Musical parameters
 	const baseFrequencies = [
 		130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94, 261.63, // C3-C4
@@ -191,6 +204,9 @@
 		activeSquares = [...activeSquares]; // Trigger reactivity
 		
 		if (activeSquares[index]) {
+			// Apply default settings to this square
+			oscillatorControls[index] = { ...defaultOscillatorSettings };
+			oscillatorControls = [...oscillatorControls];
 			// Start sound
 			audioNodes[index] = createAmbientSound(index);
 		} else {
@@ -386,6 +402,47 @@
 		oscillatorControls = [...oscillatorControls];
 	}
 	
+	// Update default oscillator settings
+	function updateDefaultSetting(param: string, value: any) {
+		(defaultOscillatorSettings as any)[param] = value;
+		defaultOscillatorSettings = { ...defaultOscillatorSettings };
+	}
+	
+	// Apply current default settings to all active squares
+	function applyDefaultsToAllActive() {
+		if (!audioContext) return;
+		
+		activeSquares.forEach((isActive, index) => {
+			if (isActive) {
+				oscillatorControls[index] = { ...defaultOscillatorSettings };
+				// Update the audio parameters in real-time
+				updateOscillatorControl(index, 'primaryFreq', defaultOscillatorSettings.primaryFreq);
+				updateOscillatorControl(index, 'primaryWave', defaultOscillatorSettings.primaryWave);
+				updateOscillatorControl(index, 'primaryGain', defaultOscillatorSettings.primaryGain);
+				updateOscillatorControl(index, 'secondaryFreq', defaultOscillatorSettings.secondaryFreq);
+				updateOscillatorControl(index, 'secondaryWave', defaultOscillatorSettings.secondaryWave);
+				updateOscillatorControl(index, 'lfoFreq', defaultOscillatorSettings.lfoFreq);
+				updateOscillatorControl(index, 'lfoWave', defaultOscillatorSettings.lfoWave);
+			}
+		});
+		oscillatorControls = [...oscillatorControls];
+	}
+	
+	// Reset default settings to original defaults
+	function resetDefaultSettings() {
+		defaultOscillatorSettings = {
+			primaryFreq: 1.0,
+			primaryWave: 'sine',
+			primaryGain: 1.0,
+			secondaryFreq: 1.5,
+			secondaryWave: 'sine',
+			secondaryGain: 0.5,
+			lfoFreq: 0.2,
+			lfoWave: 'sine',
+			lfoGain: 10
+		};
+	}
+	
 	// Cleanup on component destroy
 	onDestroy(() => {
 		stopEvolution();
@@ -545,6 +602,180 @@
 			</div>
 			<div class="flex items-center">
 				<span class="text-gray-400">Active: {activeSquares.filter(Boolean).length}/{TOTAL_SQUARES}</span>
+			</div>
+		</div>
+	</div>
+	
+	<!-- Default Settings Panel -->
+	<div class="max-w-4xl mx-auto mt-6">
+		<div class="bg-gray-800 rounded-xl border border-gray-700 p-6">
+			<h3 class="text-xl font-bold text-white mb-4 text-center">Default Settings for New Squares</h3>
+			
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<!-- Primary Oscillator Defaults -->
+				<div class="bg-gray-700 rounded-lg p-4">
+					<h4 class="text-lg font-semibold text-blue-400 mb-3">Primary Oscillator</h4>
+					<div class="space-y-3">
+						<div>
+							<label for="default-primary-freq" class="text-xs text-gray-400 block mb-1">Frequency Multiplier</label>
+							<input
+								id="default-primary-freq"
+								type="range"
+								min="0.1"
+								max="3.0"
+								step="0.1"
+								value={defaultOscillatorSettings.primaryFreq}
+								on:input={(e) => updateDefaultSetting('primaryFreq', parseFloat(e.currentTarget.value))}
+								class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+							/>
+							<span class="text-xs text-gray-500">{defaultOscillatorSettings.primaryFreq.toFixed(1)}x</span>
+						</div>
+						<div>
+							<label for="default-primary-wave" class="text-xs text-gray-400 block mb-1">Waveform</label>
+							<select
+								id="default-primary-wave"
+								value={defaultOscillatorSettings.primaryWave}
+								on:change={(e) => updateDefaultSetting('primaryWave', e.currentTarget.value)}
+								class="w-full px-2 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+							>
+								{#each waveTypes as waveType}
+									<option value={waveType}>{waveType}</option>
+								{/each}
+							</select>
+						</div>
+						<div>
+							<label for="default-primary-gain" class="text-xs text-gray-400 block mb-1">Gain</label>
+							<input
+								id="default-primary-gain"
+								type="range"
+								min="0.1"
+								max="2.0"
+								step="0.1"
+								value={defaultOscillatorSettings.primaryGain}
+								on:input={(e) => updateDefaultSetting('primaryGain', parseFloat(e.currentTarget.value))}
+								class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+							/>
+							<span class="text-xs text-gray-500">{defaultOscillatorSettings.primaryGain.toFixed(1)}</span>
+						</div>
+					</div>
+				</div>
+				
+				<!-- Secondary Oscillator Defaults -->
+				<div class="bg-gray-700 rounded-lg p-4">
+					<h4 class="text-lg font-semibold text-purple-400 mb-3">Secondary Oscillator</h4>
+					<div class="space-y-3">
+						<div>
+							<label for="default-secondary-freq" class="text-xs text-gray-400 block mb-1">Frequency Multiplier</label>
+							<input
+								id="default-secondary-freq"
+								type="range"
+								min="0.1"
+								max="4.0"
+								step="0.1"
+								value={defaultOscillatorSettings.secondaryFreq}
+								on:input={(e) => updateDefaultSetting('secondaryFreq', parseFloat(e.currentTarget.value))}
+								class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+							/>
+							<span class="text-xs text-gray-500">{defaultOscillatorSettings.secondaryFreq.toFixed(1)}x</span>
+						</div>
+						<div>
+							<label for="default-secondary-wave" class="text-xs text-gray-400 block mb-1">Waveform</label>
+							<select
+								id="default-secondary-wave"
+								value={defaultOscillatorSettings.secondaryWave}
+								on:change={(e) => updateDefaultSetting('secondaryWave', e.currentTarget.value)}
+								class="w-full px-2 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+							>
+								{#each waveTypes as waveType}
+									<option value={waveType}>{waveType}</option>
+								{/each}
+							</select>
+						</div>
+						<div>
+							<label for="default-secondary-gain" class="text-xs text-gray-400 block mb-1">Gain</label>
+							<input
+								id="default-secondary-gain"
+								type="range"
+								min="0.1"
+								max="2.0"
+								step="0.1"
+								value={defaultOscillatorSettings.secondaryGain}
+								on:input={(e) => updateDefaultSetting('secondaryGain', parseFloat(e.currentTarget.value))}
+								class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+							/>
+							<span class="text-xs text-gray-500">{defaultOscillatorSettings.secondaryGain.toFixed(1)}</span>
+						</div>
+					</div>
+				</div>
+				
+				<!-- LFO Defaults -->
+				<div class="bg-gray-700 rounded-lg p-4">
+					<h4 class="text-lg font-semibold text-green-400 mb-3">LFO</h4>
+					<div class="space-y-3">
+						<div>
+							<label for="default-lfo-freq" class="text-xs text-gray-400 block mb-1">Frequency (Hz)</label>
+							<input
+								id="default-lfo-freq"
+								type="range"
+								min="0.1"
+								max="5.0"
+								step="0.1"
+								value={defaultOscillatorSettings.lfoFreq}
+								on:input={(e) => updateDefaultSetting('lfoFreq', parseFloat(e.currentTarget.value))}
+								class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+							/>
+							<span class="text-xs text-gray-500">{defaultOscillatorSettings.lfoFreq.toFixed(1)} Hz</span>
+						</div>
+						<div>
+							<label for="default-lfo-wave" class="text-xs text-gray-400 block mb-1">Waveform</label>
+							<select
+								id="default-lfo-wave"
+								value={defaultOscillatorSettings.lfoWave}
+								on:change={(e) => updateDefaultSetting('lfoWave', e.currentTarget.value)}
+								class="w-full px-2 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+							>
+								{#each waveTypes as waveType}
+									<option value={waveType}>{waveType}</option>
+								{/each}
+							</select>
+						</div>
+						<div>
+							<label for="default-lfo-gain" class="text-xs text-gray-400 block mb-1">Gain</label>
+							<input
+								id="default-lfo-gain"
+								type="range"
+								min="1"
+								max="20"
+								step="1"
+								value={defaultOscillatorSettings.lfoGain}
+								on:input={(e) => updateDefaultSetting('lfoGain', parseFloat(e.currentTarget.value))}
+								class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+							/>
+							<span class="text-xs text-gray-500">{defaultOscillatorSettings.lfoGain}</span>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<!-- Action Buttons -->
+			<div class="flex flex-wrap justify-center gap-4 mt-6">
+				<button
+					on:click={applyDefaultsToAllActive}
+					class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+					disabled={!activeSquares.some(Boolean)}
+				>
+					Apply to All Active
+				</button>
+				<button
+					on:click={resetDefaultSettings}
+					class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg font-medium transition-colors"
+				>
+					Reset Defaults
+				</button>
+			</div>
+			
+			<div class="mt-4 text-center text-gray-400 text-sm">
+				<p>These settings will be applied to new squares when activated</p>
 			</div>
 		</div>
 	</div>
