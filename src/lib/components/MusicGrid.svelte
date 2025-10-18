@@ -415,6 +415,10 @@
 		} catch (e) {
 			console.warn('Failed to update oscillator parameter:', e);
 		}
+		
+		// Force reactivity update for color changes
+		// This ensures the colors update in real-time when audio parameters change
+		activeSquares = [...activeSquares];
 	}
 	
 	// Reset oscillator controls to defaults
@@ -533,6 +537,97 @@
 		const chordIndices = chordMap[currentChord] || [0, 2, 4];
 		return chordIndices.map(i => scaleFrequencies[i % scaleFrequencies.length]);
 	}
+
+	// Color mapping functions for audio visualization
+	function frequencyToHue(frequency: number): number {
+		// Map frequency range (130-523Hz) to hue range (0-360 degrees)
+		// Low frequencies (bass) -> warm colors (red/orange)
+		// High frequencies (treble) -> cool colors (blue/purple)
+		const minFreq = 130;
+		const maxFreq = 523;
+		const normalizedFreq = Math.max(0, Math.min(1, (frequency - minFreq) / (maxFreq - minFreq)));
+		
+		// Map to hue: 0-60 (red-orange) for low, 240-300 (blue-purple) for high
+		const hue = normalizedFreq * 300; // 0-300 degrees covers red to purple
+		console.log(`Frequency: ${frequency.toFixed(1)}Hz -> Hue: ${hue.toFixed(1)}°`);
+		return hue;
+	}
+
+	function getSquareColor(index: number): string {
+		if (!activeSquares[index]) return 'bg-gray-700 hover:bg-gray-600';
+		
+		// Get the current frequency for this square
+		let baseFrequency: number;
+		if (isSynchronized && scaleFrequencies.length > 0) {
+			const scaleIndex = index % scaleFrequencies.length;
+			baseFrequency = scaleFrequencies[scaleIndex];
+		} else {
+			baseFrequency = baseFrequencies[index] || 200 + (index * 10);
+		}
+		
+		// Apply frequency multiplier
+		const controls = oscillatorControls[index];
+		const actualFrequency = baseFrequency * controls.primaryFreq;
+		
+		// Get hue based on frequency
+		const hue = frequencyToHue(actualFrequency);
+		
+		// Get brightness based on volume (gain)
+		const volume = controls.primaryGain;
+		const lightness = 40 + (volume * 30); // 40-100% lightness based on volume
+		
+		// Get saturation based on volume
+		const saturation = 60 + (volume * 40); // 60-100% saturation based on volume
+		
+		// Create gradient with primary and secondary colors
+		const primaryColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+		const secondaryColor = `hsl(${(hue + 30) % 360}, ${saturation - 20}%, ${lightness - 10}%)`;
+		
+		return `bg-gradient-to-br from-[${primaryColor}] to-[${secondaryColor}] shadow-lg shadow-${primaryColor}/50`;
+	}
+
+	function getSquareShadowColor(index: number): string {
+		if (!activeSquares[index]) return '';
+		
+		let baseFrequency: number;
+		if (isSynchronized && scaleFrequencies.length > 0) {
+			const scaleIndex = index % scaleFrequencies.length;
+			baseFrequency = scaleFrequencies[scaleIndex];
+		} else {
+			baseFrequency = baseFrequencies[index] || 200 + (index * 10);
+		}
+		
+		const controls = oscillatorControls[index];
+		const actualFrequency = baseFrequency * controls.primaryFreq;
+		const hue = frequencyToHue(actualFrequency);
+		
+		return `shadow-[hsl(${hue}, 80%, 50%)]/50`;
+	}
+
+	function getCurrentFrequency(index: number): number {
+		let baseFrequency: number;
+		if (isSynchronized && scaleFrequencies.length > 0) {
+			const scaleIndex = index % scaleFrequencies.length;
+			baseFrequency = scaleFrequencies[scaleIndex];
+		} else {
+			baseFrequency = baseFrequencies[index] || 200 + (index * 10);
+		}
+		
+		const controls = oscillatorControls[index];
+		return baseFrequency * controls.primaryFreq;
+	}
+
+	function getSaturation(index: number): number {
+		if (!activeSquares[index]) return 0;
+		const volume = oscillatorControls[index].primaryGain;
+		return 60 + (volume * 40); // 60-100% saturation based on volume
+	}
+
+	function getLightness(index: number): number {
+		if (!activeSquares[index]) return 0;
+		const volume = oscillatorControls[index].primaryGain;
+		return 40 + (volume * 30); // 40-100% lightness based on volume
+	}
 </script>
 
 <style>
@@ -586,7 +681,7 @@
 		border: 1px solid #6b7280;
 		border-radius: 4px;
 		padding: 4px 8px;
-		font-size: 12px;
+		font-size: 16px;
 	}
 
 	select:focus {
@@ -598,12 +693,21 @@
 	
 	<div class="grid grid-cols-8 gap-2 max-w-2xl mx-auto p-4 bg-gray-800 rounded-xl">
 		{#each Array(TOTAL_SQUARES) as _, index}
+			{@const currentFreq = getCurrentFrequency(index)}
+			{@const hue = frequencyToHue(currentFreq)}
+			{@const saturation = getSaturation(index)}
+			{@const lightness = getLightness(index)}
+			{@const primaryColor = activeSquares[index] ? `hsl(${hue}, ${saturation}%, ${lightness}%)` : ''}
+			{@const secondaryColor = activeSquares[index] ? `hsl(${(hue + 30) % 360}, ${saturation - 20}%, ${lightness - 10}%)` : ''}
 			<button
 				on:click={() => toggleSquare(index)}
-				class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index] 
-					? 'bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/50' 
+				class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index]
+					? 'shadow-lg'
 					: 'bg-gray-700 hover:bg-gray-600'}"
 				aria-label="Square {index + 1}"
+				style="{activeSquares[index]
+					? `background: linear-gradient(to bottom right, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 20px ${primaryColor}50;`
+					: ''}"
 			>
 				<div class="w-full h-full rounded-lg {activeSquares[index] ? 'animate-bounce' : ''}"></div>
 			</button>
@@ -615,7 +719,7 @@
 		<div>
 			<button
 				on:click={initAudio}
-				class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors mr-4"
+				class="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors mr-4 text-lg"
 				disabled={isAudioInitialized}
 			>
 				{isAudioInitialized ? 'Audio Ready' : 'Enable Audio'}
@@ -625,16 +729,16 @@
 		{#if isSynchronized && scaleFrequencies.length > 0}
 		<div class="synchronization-info">
 			<div class="sync-status">
-				<span class="sync-icon">🎵</span>
-				<span>Synchronized to {selectedKey} {selectedScale}</span>
+				<span class="sync-icon text-lg">🎵</span>
+				<span class="text-lg">Synchronized to {selectedKey} {selectedScale}</span>
 			</div>
 			{#if currentChord}
 			<div class="chord-info">
-				<span class="chord-label">Current Chord:</span>
-				<span class="chord-name">{currentChord}</span>
+				<span class="chord-label text-lg">Current Chord:</span>
+				<span class="chord-name text-lg font-bold">{currentChord}</span>
 				<div class="chord-frequencies">
 					{#each getCurrentChordFrequencies() as freq}
-						<span class="freq-badge">{freq.toFixed(1)}Hz</span>
+						<span class="freq-badge text-base">{freq.toFixed(1)}Hz</span>
 					{/each}
 				</div>
 			</div>
@@ -645,7 +749,7 @@
 		<div class="flex flex-wrap justify-center gap-4">
 			<button
 				on:click={isEvolving ? stopEvolution : startEvolution}
-				class="px-4 py-2 {isEvolving ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} rounded-lg font-medium transition-colors"
+				class="px-6 py-3 {isEvolving ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} rounded-lg font-medium transition-colors text-lg"
 				disabled={!isAudioInitialized}
 			>
 				{isEvolving ? 'Stop Evolution' : 'Start Evolution'}
@@ -653,7 +757,7 @@
 			
 			<button
 				on:click={randomizeGrid}
-				class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors"
+				class="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors text-lg"
 				disabled={!isAudioInitialized}
 			>
 				Randomize
@@ -661,14 +765,14 @@
 			
 			<button
 				on:click={clearGrid}
-				class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg font-medium transition-colors"
+				class="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg font-medium transition-colors text-lg"
 			>
 				Clear All
 			</button>
 		</div>
 		
 		<div class="flex items-center justify-center gap-4 mt-4">
-			<label class="text-sm text-gray-300">Evolution Speed:</label>
+			<label class="text-base text-gray-300">Evolution Speed:</label>
 			<input
 				type="range"
 				min="32"
@@ -678,27 +782,27 @@
 				on:input={(e) => updateEvolutionSpeed(parseInt(e.currentTarget.value))}
 				class="w-32"
 			/>
-			<span class="text-sm text-gray-400">{evolutionSpeed}ms</span>
+			<span class="text-base text-gray-400">{evolutionSpeed}ms</span>
 		</div>
 	</div>
 	
 	<div class="mt-6 text-center text-gray-400">
-		<p class="mb-2">Click squares to activate ambient sounds</p>
-		<p class="text-sm">Each square creates a different tone in an evolving musical loop</p>
+		<p class="mb-2 text-lg">Click squares to activate ambient sounds</p>
+		<p class="text-base">Each square creates a different tone in an evolving musical loop</p>
 	</div>
 	
 	<div class="mt-4 text-center">
-		<div class="inline-flex items-center space-x-4 text-sm">
+		<div class="inline-flex items-center space-x-4 text-base">
 			<div class="flex items-center">
-				<div class="w-3 h-3 rounded-full {isEvolving ? 'bg-green-500 animate-pulse' : 'bg-gray-500'} mr-2"></div>
-				<span>{isEvolving ? 'Evolving' : 'Static'}</span>
+				<div class="w-4 h-4 rounded-full {isEvolving ? 'bg-green-500 animate-pulse' : 'bg-gray-500'} mr-2"></div>
+				<span class="text-base">{isEvolving ? 'Evolving' : 'Static'}</span>
 			</div>
 			<div class="flex items-center">
-				<div class="w-3 h-3 rounded-full {isAudioInitialized ? 'bg-blue-500' : 'bg-gray-500'} mr-2"></div>
-				<span>{isAudioInitialized ? 'Audio Active' : 'Audio Disabled'}</span>
+				<div class="w-4 h-4 rounded-full {isAudioInitialized ? 'bg-blue-500' : 'bg-gray-500'} mr-2"></div>
+				<span class="text-base">{isAudioInitialized ? 'Audio Active' : 'Audio Disabled'}</span>
 			</div>
 			<div class="flex items-center">
-				<span class="text-gray-400">Active: {activeSquares.filter(Boolean).length}/{TOTAL_SQUARES}</span>
+				<span class="text-gray-400 text-base">Active: {activeSquares.filter(Boolean).length}/{TOTAL_SQUARES}</span>
 			</div>
 		</div>
 	</div>
@@ -706,15 +810,15 @@
 	<!-- Default Settings Panel -->
 	<div class="max-w-4xl mx-auto mt-6">
 		<div class="bg-gray-800 rounded-xl border border-gray-700 p-6">
-			<h3 class="text-xl font-bold text-white mb-4 text-center">Default Settings for New Squares</h3>
+			<h3 class="text-2xl font-bold text-white mb-4 text-center">Default Settings for New Squares</h3>
 			
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 				<!-- Primary Oscillator Defaults -->
 				<div class="bg-gray-700 rounded-lg p-4">
-					<h4 class="text-lg font-semibold text-blue-400 mb-3">Primary Oscillator</h4>
+					<h4 class="text-xl font-semibold text-blue-400 mb-3">Primary Oscillator</h4>
 					<div class="space-y-3">
 						<div>
-							<label for="default-primary-freq" class="text-xs text-gray-400 block mb-1">Frequency Multiplier</label>
+							<label for="default-primary-freq" class="text-sm text-gray-400 block mb-1">Frequency Multiplier</label>
 							<input
 								id="default-primary-freq"
 								type="range"
@@ -725,15 +829,15 @@
 								on:input={(e) => updateDefaultSetting('primaryFreq', parseFloat(e.currentTarget.value))}
 								class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
 							/>
-							<span class="text-xs text-gray-500">{defaultOscillatorSettings.primaryFreq.toFixed(1)}x</span>
+							<span class="text-sm text-gray-500">{defaultOscillatorSettings.primaryFreq.toFixed(1)}x</span>
 						</div>
 						<div>
-							<label for="default-primary-wave" class="text-xs text-gray-400 block mb-1">Waveform</label>
+							<label for="default-primary-wave" class="text-sm text-gray-400 block mb-1">Waveform</label>
 							<select
 								id="default-primary-wave"
 								value={defaultOscillatorSettings.primaryWave}
 								on:change={(e) => updateDefaultSetting('primaryWave', e.currentTarget.value)}
-								class="w-full px-2 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+								class="w-full px-2 py-1 bg-gray-600 text-white text-sm rounded border border-gray-500"
 							>
 								{#each waveTypes as waveType}
 									<option value={waveType}>{waveType}</option>
@@ -741,7 +845,7 @@
 							</select>
 						</div>
 						<div>
-							<label for="default-primary-gain" class="text-xs text-gray-400 block mb-1">Gain</label>
+							<label for="default-primary-gain" class="text-sm text-gray-400 block mb-1">Gain</label>
 							<input
 								id="default-primary-gain"
 								type="range"
@@ -752,17 +856,17 @@
 								on:input={(e) => updateDefaultSetting('primaryGain', parseFloat(e.currentTarget.value))}
 								class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
 							/>
-							<span class="text-xs text-gray-500">{defaultOscillatorSettings.primaryGain.toFixed(1)}</span>
+							<span class="text-sm text-gray-500">{defaultOscillatorSettings.primaryGain.toFixed(1)}</span>
 						</div>
 					</div>
 				</div>
 				
 				<!-- Secondary Oscillator Defaults -->
 				<div class="bg-gray-700 rounded-lg p-4">
-					<h4 class="text-lg font-semibold text-purple-400 mb-3">Secondary Oscillator</h4>
+					<h4 class="text-xl font-semibold text-purple-400 mb-3">Secondary Oscillator</h4>
 					<div class="space-y-3">
 						<div>
-							<label for="default-secondary-freq" class="text-xs text-gray-400 block mb-1">Frequency Multiplier</label>
+							<label for="default-secondary-freq" class="text-sm text-gray-400 block mb-1">Frequency Multiplier</label>
 							<input
 								id="default-secondary-freq"
 								type="range"
@@ -773,15 +877,15 @@
 								on:input={(e) => updateDefaultSetting('secondaryFreq', parseFloat(e.currentTarget.value))}
 								class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
 							/>
-							<span class="text-xs text-gray-500">{defaultOscillatorSettings.secondaryFreq.toFixed(1)}x</span>
+							<span class="text-sm text-gray-500">{defaultOscillatorSettings.secondaryFreq.toFixed(1)}x</span>
 						</div>
 						<div>
-							<label for="default-secondary-wave" class="text-xs text-gray-400 block mb-1">Waveform</label>
+							<label for="default-secondary-wave" class="text-sm text-gray-400 block mb-1">Waveform</label>
 							<select
 								id="default-secondary-wave"
 								value={defaultOscillatorSettings.secondaryWave}
 								on:change={(e) => updateDefaultSetting('secondaryWave', e.currentTarget.value)}
-								class="w-full px-2 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+								class="w-full px-2 py-1 bg-gray-600 text-white text-sm rounded border border-gray-500"
 							>
 								{#each waveTypes as waveType}
 									<option value={waveType}>{waveType}</option>
@@ -789,7 +893,7 @@
 							</select>
 						</div>
 						<div>
-							<label for="default-secondary-gain" class="text-xs text-gray-400 block mb-1">Gain</label>
+							<label for="default-secondary-gain" class="text-sm text-gray-400 block mb-1">Gain</label>
 							<input
 								id="default-secondary-gain"
 								type="range"
@@ -800,17 +904,17 @@
 								on:input={(e) => updateDefaultSetting('secondaryGain', parseFloat(e.currentTarget.value))}
 								class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
 							/>
-							<span class="text-xs text-gray-500">{defaultOscillatorSettings.secondaryGain.toFixed(1)}</span>
+							<span class="text-sm text-gray-500">{defaultOscillatorSettings.secondaryGain.toFixed(1)}</span>
 						</div>
 					</div>
 				</div>
 				
 				<!-- LFO Defaults -->
 				<div class="bg-gray-700 rounded-lg p-4">
-					<h4 class="text-lg font-semibold text-green-400 mb-3">LFO</h4>
+					<h4 class="text-xl font-semibold text-green-400 mb-3">LFO</h4>
 					<div class="space-y-3">
 						<div>
-							<label for="default-lfo-freq" class="text-xs text-gray-400 block mb-1">Frequency (Hz)</label>
+							<label for="default-lfo-freq" class="text-sm text-gray-400 block mb-1">Frequency (Hz)</label>
 							<input
 								id="default-lfo-freq"
 								type="range"
@@ -821,15 +925,15 @@
 								on:input={(e) => updateDefaultSetting('lfoFreq', parseFloat(e.currentTarget.value))}
 								class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
 							/>
-							<span class="text-xs text-gray-500">{defaultOscillatorSettings.lfoFreq.toFixed(1)} Hz</span>
+							<span class="text-sm text-gray-500">{defaultOscillatorSettings.lfoFreq.toFixed(1)} Hz</span>
 						</div>
 						<div>
-							<label for="default-lfo-wave" class="text-xs text-gray-400 block mb-1">Waveform</label>
+							<label for="default-lfo-wave" class="text-sm text-gray-400 block mb-1">Waveform</label>
 							<select
 								id="default-lfo-wave"
 								value={defaultOscillatorSettings.lfoWave}
 								on:change={(e) => updateDefaultSetting('lfoWave', e.currentTarget.value)}
-								class="w-full px-2 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+								class="w-full px-2 py-1 bg-gray-600 text-white text-sm rounded border border-gray-500"
 							>
 								{#each waveTypes as waveType}
 									<option value={waveType}>{waveType}</option>
@@ -837,7 +941,7 @@
 							</select>
 						</div>
 						<div>
-							<label for="default-lfo-gain" class="text-xs text-gray-400 block mb-1">Gain</label>
+							<label for="default-lfo-gain" class="text-sm text-gray-400 block mb-1">Gain</label>
 							<input
 								id="default-lfo-gain"
 								type="range"
@@ -848,7 +952,7 @@
 								on:input={(e) => updateDefaultSetting('lfoGain', parseFloat(e.currentTarget.value))}
 								class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
 							/>
-							<span class="text-xs text-gray-500">{defaultOscillatorSettings.lfoGain}</span>
+							<span class="text-sm text-gray-500">{defaultOscillatorSettings.lfoGain}</span>
 						</div>
 					</div>
 				</div>
@@ -858,20 +962,20 @@
 			<div class="flex flex-wrap justify-center gap-4 mt-6">
 				<button
 					on:click={applyDefaultsToAllActive}
-					class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+					class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors text-lg"
 					disabled={!activeSquares.some(Boolean)}
 				>
 					Apply to All Active
 				</button>
 				<button
 					on:click={resetDefaultSettings}
-					class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg font-medium transition-colors"
+					class="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg font-medium transition-colors text-lg"
 				>
 					Reset Defaults
 				</button>
 			</div>
 			
-			<div class="mt-4 text-center text-gray-400 text-sm">
+			<div class="mt-4 text-center text-gray-400 text-base">
 				<p>These settings will be applied to new squares when activated</p>
 			</div>
 		</div>
@@ -880,20 +984,20 @@
 	<!-- Oscillator Controls Panel -->
 	{#if activeSquares.some(Boolean)}
 	<div class="max-w-6xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl border border-gray-700">
-		<h3 class="text-xl font-bold text-white mb-4 text-center">Oscillator Controls</h3>
+		<h3 class="text-2xl font-bold text-white mb-4 text-center">Oscillator Controls</h3>
 		
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-96 overflow-y-auto">
 			{#each activeSquares as isActive, index}
 				{#if isActive}
 				<div class="bg-gray-700 rounded-lg p-4 border border-gray-600 min-w-64">
-					<h4 class="text-lg font-semibold text-blue-400 mb-3 text-center">Square {index + 1}</h4>
+					<h4 class="text-xl font-semibold text-blue-400 mb-3 text-center">Square {index + 1}</h4>
 					
 					<!-- Primary Oscillator Controls -->
 					<div class="mb-4">
-						<h5 class="text-sm font-medium text-gray-300 mb-2">Primary Oscillator</h5>
+						<h5 class="text-base font-medium text-gray-300 mb-2">Primary Oscillator</h5>
 						<div class="space-y-2">
 							<div>
-								<label class="text-xs text-gray-400 block mb-1">Frequency Multiplier</label>
+								<label class="text-sm text-gray-400 block mb-1">Frequency Multiplier</label>
 								<input
 									type="range"
 									min="0.1"
@@ -903,14 +1007,14 @@
 									on:input={(e) => updateOscillatorControl(index, 'primaryFreq', parseFloat(e.currentTarget.value))}
 									class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
 								/>
-								<span class="text-xs text-gray-500">{oscillatorControls[index].primaryFreq.toFixed(1)}x</span>
+								<span class="text-sm text-gray-500">{oscillatorControls[index].primaryFreq.toFixed(1)}x</span>
 							</div>
 							<div>
-								<label class="text-xs text-gray-400 block mb-1">Waveform</label>
+								<label class="text-sm text-gray-400 block mb-1">Waveform</label>
 								<select
 									value={oscillatorControls[index].primaryWave}
 									on:change={(e) => updateOscillatorControl(index, 'primaryWave', e.currentTarget.value)}
-									class="w-full px-2 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+									class="w-full px-2 py-1 bg-gray-600 text-white text-sm rounded border border-gray-500"
 								>
 									{#each waveTypes as waveType}
 										<option value={waveType}>{waveType}</option>
@@ -918,7 +1022,7 @@
 								</select>
 							</div>
 							<div>
-								<label class="text-xs text-gray-400 block mb-1">Gain</label>
+								<label class="text-sm text-gray-400 block mb-1">Gain</label>
 								<input
 									type="range"
 									min="0.1"
@@ -928,17 +1032,17 @@
 									on:input={(e) => updateOscillatorControl(index, 'primaryGain', parseFloat(e.currentTarget.value))}
 									class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
 								/>
-								<span class="text-xs text-gray-500">{oscillatorControls[index].primaryGain.toFixed(1)}</span>
+								<span class="text-sm text-gray-500">{oscillatorControls[index].primaryGain.toFixed(1)}</span>
 							</div>
 						</div>
 					</div>
 					
 					<!-- Secondary Oscillator Controls -->
 					<div class="mb-4">
-						<h5 class="text-sm font-medium text-gray-300 mb-2">Secondary Oscillator</h5>
+						<h5 class="text-base font-medium text-gray-300 mb-2">Secondary Oscillator</h5>
 						<div class="space-y-2">
 							<div>
-								<label class="text-xs text-gray-400 block mb-1">Frequency Multiplier</label>
+								<label class="text-sm text-gray-400 block mb-1">Frequency Multiplier</label>
 								<input
 									type="range"
 									min="0.1"
@@ -948,14 +1052,14 @@
 									on:input={(e) => updateOscillatorControl(index, 'secondaryFreq', parseFloat(e.currentTarget.value))}
 									class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
 								/>
-								<span class="text-xs text-gray-500">{oscillatorControls[index].secondaryFreq.toFixed(1)}x</span>
+								<span class="text-sm text-gray-500">{oscillatorControls[index].secondaryFreq.toFixed(1)}x</span>
 							</div>
 							<div>
-								<label class="text-xs text-gray-400 block mb-1">Waveform</label>
+								<label class="text-sm text-gray-400 block mb-1">Waveform</label>
 								<select
 									value={oscillatorControls[index].secondaryWave}
 									on:change={(e) => updateOscillatorControl(index, 'secondaryWave', e.currentTarget.value)}
-									class="w-full px-2 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+									class="w-full px-2 py-1 bg-gray-600 text-white text-sm rounded border border-gray-500"
 								>
 									{#each waveTypes as waveType}
 										<option value={waveType}>{waveType}</option>
@@ -967,10 +1071,10 @@
 					
 					<!-- LFO Controls -->
 					<div class="mb-4">
-						<h5 class="text-sm font-medium text-gray-300 mb-2">LFO (Low Frequency Oscillator)</h5>
+						<h5 class="text-base font-medium text-gray-300 mb-2">LFO (Low Frequency Oscillator)</h5>
 						<div class="space-y-2">
 							<div>
-								<label class="text-xs text-gray-400 block mb-1">Frequency (Hz)</label>
+								<label class="text-sm text-gray-400 block mb-1">Frequency (Hz)</label>
 								<input
 									type="range"
 									min="0.1"
@@ -980,14 +1084,14 @@
 									on:input={(e) => updateOscillatorControl(index, 'lfoFreq', parseFloat(e.currentTarget.value))}
 									class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
 								/>
-								<span class="text-xs text-gray-500">{oscillatorControls[index].lfoFreq.toFixed(1)} Hz</span>
+								<span class="text-sm text-gray-500">{oscillatorControls[index].lfoFreq.toFixed(1)} Hz</span>
 							</div>
 							<div>
-								<label class="text-xs text-gray-400 block mb-1">Waveform</label>
+								<label class="text-sm text-gray-400 block mb-1">Waveform</label>
 								<select
 									value={oscillatorControls[index].lfoWave}
 									on:change={(e) => updateOscillatorControl(index, 'lfoWave', e.currentTarget.value)}
-									class="w-full px-2 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+									class="w-full px-2 py-1 bg-gray-600 text-white text-sm rounded border border-gray-500"
 								>
 									{#each waveTypes as waveType}
 										<option value={waveType}>{waveType}</option>
@@ -999,7 +1103,7 @@
 					
 					<button
 						on:click={() => resetOscillatorControls(index)}
-						class="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+						class="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
 					>
 						Reset to Defaults
 					</button>

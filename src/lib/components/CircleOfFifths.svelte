@@ -231,7 +231,7 @@
 				<circle
 					cx={position.x}
 					cy={position.y}
-					r={isSelected ? 20 : 15}
+					r={isSelected ? 35 : 30}
 					fill={getKeyColor(key)}
 					stroke={isSelected ? '#fbbf24' : isHovered ? '#60a5fa' : 'none'}
 					stroke-width={isSelected ? 3 : 2}
@@ -258,7 +258,7 @@
 					text-anchor="middle"
 					class="key-label"
 					fill="white"
-					font-size="12"
+					font-size="16"
 					font-weight={isSelected ? 'bold' : 'normal'}
 				>
 					{getNoteName(key, key)}
@@ -275,7 +275,7 @@
 							text-anchor="middle"
 							class="degree-label"
 							fill="#fbbf24"
-							font-size="10"
+							font-size="14"
 						>
 							{noteIndex + 1}
 						</text>
@@ -284,8 +284,8 @@
 			{/each}
 			
 			<!-- Center tonic indicator -->
-			<circle cx="150" cy="150" r="8" fill="#10b981"/>
-			<text x="150" y="155" text-anchor="middle" class="center-label" fill="white" font-size="8">I</text>
+			<circle cx="150" cy="150" r="12" fill="#10b981"/>
+			<text x="150" y="157" text-anchor="middle" class="center-label" fill="white" font-size="12">I</text>
 		</svg>
 	</div>
 	
@@ -362,7 +362,7 @@
 	}
 	
 	.control-group label {
-		font-size: 0.875rem;
+		font-size: 1rem;
 		color: #d1d5db;
 	}
 	
@@ -372,7 +372,7 @@
 		color: white;
 		border: 1px solid #6b7280;
 		border-radius: 0.25rem;
-		font-size: 0.875rem;
+		font-size: 1rem;
 	}
 	
 	.control-group input[type="checkbox"] {
@@ -455,7 +455,7 @@
 		padding: 0.25rem 0.5rem;
 		background: #4b5563;
 		border-radius: 0.25rem;
-		font-size: 0.875rem;
+		font-size: 1rem;
 	}
 	
 	.scale-note.tonic {
@@ -464,7 +464,7 @@
 	}
 	
 	.scale-note sub {
-		font-size: 0.7em;
+		font-size: 0.8em;
 		vertical-align: sub;
 		margin-left: 0.1rem;
 	}
