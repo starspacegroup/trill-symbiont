@@ -33,6 +33,10 @@
 	let currentStep = 0;
 	let maxSteps = 16;
 	
+	// Right-click tracking
+	let rightClickActive = false;
+	let rightClickIndex: number | null = null;
+	
 	// Oscillator controls for each square
 	let oscillatorControls: Array<{
 		primaryFreq: number;
@@ -90,7 +94,7 @@
 		try {
 			audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 			masterGain = audioContext.createGain();
-			masterGain.gain.value = 1.8;
+			masterGain.gain.value = 2.3;
 			masterGain.connect(audioContext.destination);
 			isAudioInitialized = true;
 		} catch (error) {
@@ -230,6 +234,49 @@
 			// Stop sound
 			stopAmbientSound(audioNodes[index], index);
 			audioNodes[index] = null;
+		}
+	}
+	
+	// Right-click activation functions
+	async function handleRightMouseDown(index: number, event: MouseEvent) {
+		event.preventDefault(); // Prevent context menu
+		if (!isAudioInitialized) {
+			await initAudio();
+		}
+		
+		rightClickActive = true;
+		rightClickIndex = index;
+		
+		// Activate the square
+		if (!activeSquares[index]) {
+			activeSquares[index] = true;
+			activeSquares = [...activeSquares];
+			oscillatorControls[index] = { ...defaultOscillatorSettings };
+			oscillatorControls = [...oscillatorControls];
+			audioNodes[index] = createAmbientSound(index);
+		}
+	}
+	
+	function handleRightMouseUp(event: MouseEvent) {
+		if (rightClickActive && rightClickIndex !== null) {
+			// Deactivate the square
+			const index = rightClickIndex;
+			if (activeSquares[index]) {
+				activeSquares[index] = false;
+				activeSquares = [...activeSquares];
+				stopAmbientSound(audioNodes[index], index);
+				audioNodes[index] = null;
+			}
+		}
+		
+		rightClickActive = false;
+		rightClickIndex = null;
+	}
+	
+	function handleMouseLeave(event: MouseEvent) {
+		// Handle case where mouse leaves the button while right-click is active
+		if (rightClickActive && rightClickIndex !== null) {
+			handleRightMouseUp(event);
 		}
 	}
 	
@@ -492,6 +539,25 @@
 		if (audioContext) {
 			audioContext.close();
 		}
+		
+		// Clean up right-click state
+		rightClickActive = false;
+		rightClickIndex = null;
+	});
+	
+	// Global mouse event listeners for right-click handling
+	onMount(() => {
+		const handleGlobalMouseUp = (event: MouseEvent) => {
+			if (rightClickActive) {
+				handleRightMouseUp(event);
+			}
+		};
+		
+		document.addEventListener('mouseup', handleGlobalMouseUp);
+		
+		return () => {
+			document.removeEventListener('mouseup', handleGlobalMouseUp);
+		};
 	});
 	
 	// Reactive statement to update frequencies when synchronization changes
@@ -735,6 +801,13 @@
 			{/if}
 			<button
 				on:click={() => toggleSquare(index)}
+				on:mousedown|preventDefault={(e) => {
+					if (e.button === 2) { // Right mouse button
+						handleRightMouseDown(index, e);
+					}
+				}}
+				on:contextmenu|preventDefault
+				on:mouseleave={handleMouseLeave}
 				class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index]
 					? 'shadow-lg border-2'
 					: 'bg-gray-700 hover:bg-gray-600'}"
@@ -822,6 +895,7 @@
 	
 	<div class="mt-6 text-center text-gray-400">
 		<p class="mb-2 text-lg">Click squares to activate ambient sounds</p>
+		<p class="text-base">Right-click and hold to temporarily activate squares</p>
 		<p class="text-base">Each square creates a different tone in an evolving musical loop</p>
 	</div>
 	
