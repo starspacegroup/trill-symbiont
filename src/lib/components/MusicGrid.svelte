@@ -7,6 +7,7 @@
 	export let scaleFrequencies: number[] = [];
 	export let isSynchronized = false;
 	export let currentChord = 'I';
+	export let masterVolume = 1.0; // New volume control prop
 	
 	// Grid configuration
 	const GRID_SIZE = 8;
@@ -87,6 +88,11 @@
 	
 	const waveTypes: OscillatorType[] = ['sine', 'triangle', 'square', 'sawtooth'];
 	
+	// Reactive statement to update master volume
+	$: if (masterGain && audioContext) {
+		masterGain.gain.setValueAtTime(10.0 * masterVolume, audioContext.currentTime);
+	}
+	
 	// Initialize audio context
 	async function initAudio() {
 		if (isAudioInitialized) return;
@@ -94,7 +100,7 @@
 		try {
 			audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 			masterGain = audioContext.createGain();
-			masterGain.gain.value = 2.3;
+			masterGain.gain.value = 10.0 * masterVolume; // Set to max and apply volume control
 			masterGain.connect(audioContext.destination);
 			isAudioInitialized = true;
 		} catch (error) {

@@ -9,6 +9,7 @@
 	let scaleFrequencies: number[] = [];
 	let isSynchronized = false;
 	let showHelp = false;
+	let masterVolume = 1.0; // Master volume control (max by default)
 	
 	// Handle circle of fifths events
 	function handleKeyChange(event: CustomEvent) {
@@ -78,6 +79,7 @@
 						<li>• Click squares to activate ambient sounds</li>
 						<li>• Use "Enable Audio" to start the audio engine</li>
 						<li>• Toggle "Synchronized to Key" to sync all sounds to the selected key</li>
+						<li>• Use the Master Volume slider to control overall audio level</li>
 						<li>• Adjust oscillator controls for each active square</li>
 						<li>• Use evolution mode for generative patterns</li>
 					</ul>
@@ -105,6 +107,7 @@
 				{selectedScale}
 				{scaleFrequencies}
 				{isSynchronized}
+				{masterVolume}
 				currentChord={selectedChord}
 				/>
 			</div>
@@ -134,6 +137,27 @@
 					{isSynchronized ? 'Synchronized to Key' : 'Free Mode'}
 					</button>
 					
+					<!-- Master Volume Control -->
+					<div class="flex flex-col gap-2">
+						<label for="master-volume" class="text-lg font-medium text-center">Master Volume</label>
+						<div class="flex items-center gap-4">
+							<span class="text-sm text-gray-400">🔇</span>
+							<input
+								id="master-volume"
+								type="range"
+								min="0"
+								max="1"
+								step="0.01"
+								bind:value={masterVolume}
+								class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+							/>
+							<span class="text-sm text-gray-400">🔊</span>
+						</div>
+						<div class="text-sm text-gray-400 text-center">
+							{Math.round(masterVolume * 100)}%
+						</div>
+					</div>
+					
 				<div class="text-base text-gray-300 text-center">
 						{#if isSynchronized}
 						<p class="text-lg">All sounds synchronized to {selectedKey} {selectedScale}</p>
@@ -155,5 +179,43 @@
 	:global(body) {
 		margin: 0;
 		padding: 0;
+	}
+	
+	/* Volume slider styling */
+	.slider {
+		background: linear-gradient(to right, #4f46e5 0%, #4f46e5 100%);
+	}
+	
+	.slider::-webkit-slider-thumb {
+		appearance: none;
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: #ffffff;
+		cursor: pointer;
+		border: 2px solid #4f46e5;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	}
+	
+	.slider::-moz-range-thumb {
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: #ffffff;
+		cursor: pointer;
+		border: 2px solid #4f46e5;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	}
+	
+	.slider::-webkit-slider-track {
+		height: 8px;
+		border-radius: 4px;
+		background: #374151;
+	}
+	
+	.slider::-moz-range-track {
+		height: 8px;
+		border-radius: 4px;
+		background: #374151;
 	}
 </style>
