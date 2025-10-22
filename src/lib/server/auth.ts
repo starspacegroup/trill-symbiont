@@ -5,8 +5,8 @@ import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 // In-memory storage for sessions and users
-export const sessions: Record<string, { id: string; userId: string; expiresAt: Date; }> = {};
-export const users: Record<string, { id: string; username: string; passwordHash: string; }> = {};
+export const sessions: Record<string, { id: string; userId: string; expiresAt: Date }> = {};
+export const users: Record<string, { id: string; username: string; passwordHash: string }> = {};
 
 export type User = {
 	id: string;
