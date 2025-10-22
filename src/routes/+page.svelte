@@ -7,10 +7,13 @@
 	let selectedScale = 'major';
 	let selectedChord = 'I';
 	let scaleFrequencies: number[] = [];
-	let isSynchronized = true; // Default to synced mode for better music theory compliance
+	let isSynchronized = true; // Always synchronized - no free mode
 	let showHelp = false;
 	let showCircleOfFifths = false; // Collapsed by default
 	let masterVolume = 1.0; // Master volume control (max by default)
+	let tempo = 120; // BPM for sequencer
+	let isSequencerRunning = false;
+	let currentSequenceStep = 0;
 
 	// Handle circle of fifths events
 	function handleKeyChange(event: CustomEvent) {
@@ -30,16 +33,35 @@
 		console.log('Chord changed to:', selectedChord);
 	}
 
-	function toggleSynchronization() {
-		isSynchronized = !isSynchronized;
-	}
-
 	function toggleHelp() {
 		showHelp = !showHelp;
 	}
 
 	function toggleCircleOfFifths() {
 		showCircleOfFifths = !showCircleOfFifths;
+	}
+
+	// Start sequencer on any user interaction
+	function startSequencerOnInteraction() {
+		if (!isSequencerRunning) {
+			isSequencerRunning = true;
+			runSequencer();
+		}
+	}
+
+	// Sequencer function
+	function runSequencer() {
+		if (!isSequencerRunning) return;
+
+		// Calculate interval based on tempo (BPM)
+		// At 120 BPM, each beat is 500ms (60000ms / 120)
+		// We'll use 8 steps per sequence
+		const intervalMs = 60000 / tempo / 2; // Half beat per step
+
+		setTimeout(() => {
+			currentSequenceStep = (currentSequenceStep + 1) % 8;
+			runSequencer();
+		}, intervalMs);
 	}
 </script>
 
@@ -64,6 +86,55 @@
 				</button>
 			</div>
 		</header>
+
+		<!-- Master Controls at Top -->
+		<div class="mx-auto mb-8 max-w-2xl">
+			<div class="rounded-xl border border-gray-700 bg-gray-800 p-6">
+				<!-- Master Volume Control -->
+				<div class="mb-6 flex flex-col gap-2">
+					<label for="master-volume" class="text-center text-lg font-medium">Master Volume</label>
+					<div class="flex items-center gap-4">
+						<span class="text-sm text-gray-400">🔇</span>
+						<input
+							id="master-volume"
+							type="range"
+							min="0"
+							max="1"
+							step="0.01"
+							bind:value={masterVolume}
+							on:input={startSequencerOnInteraction}
+							class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
+						/>
+						<span class="text-sm text-gray-400">🔊</span>
+					</div>
+					<div class="text-center text-sm text-gray-400">
+						{Math.round(masterVolume * 100)}%
+					</div>
+				</div>
+
+				<!-- Tempo Control -->
+				<div class="flex flex-col gap-2">
+					<label for="tempo" class="text-center text-lg font-medium">Tempo</label>
+					<div class="flex items-center gap-4">
+						<span class="text-sm text-gray-400">🐌</span>
+						<input
+							id="tempo"
+							type="range"
+							min="60"
+							max="180"
+							step="1"
+							bind:value={tempo}
+							on:input={startSequencerOnInteraction}
+							class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
+						/>
+						<span class="text-sm text-gray-400">🐇</span>
+					</div>
+					<div class="text-center text-sm text-gray-400">
+						{tempo} BPM
+					</div>
+				</div>
+			</div>
+		</div>
 
 		{#if showHelp}
 			<div class="mx-auto mb-8 max-w-4xl rounded-xl border border-gray-700 bg-gray-800 p-6">
@@ -118,7 +189,7 @@
 
 				{#if showCircleOfFifths}
 					<div class="border-t border-gray-700 p-6">
-						<div class="flex flex-col items-center justify-between gap-6 lg:flex-row">
+						<div class="flex flex-col items-center justify-center gap-6 lg:flex-row">
 							<div class="flex-1">
 								<CircleOfFifths
 									{selectedKey}
@@ -131,47 +202,9 @@
 								/>
 							</div>
 
-							<div class="flex flex-col gap-4">
-								<button
-									on:click={toggleSynchronization}
-									class="rounded-lg px-8 py-4 font-medium transition-colors {isSynchronized
-										? 'bg-green-600 hover:bg-green-700'
-										: 'bg-blue-600 hover:bg-blue-700'} text-lg"
-								>
-									{isSynchronized ? 'Synchronized to Key' : 'Free Mode'}
-								</button>
-
-								<!-- Master Volume Control -->
-								<div class="flex flex-col gap-2">
-									<label for="master-volume" class="text-center text-lg font-medium"
-										>Master Volume</label
-									>
-									<div class="flex items-center gap-4">
-										<span class="text-sm text-gray-400">🔇</span>
-										<input
-											id="master-volume"
-											type="range"
-											min="0"
-											max="1"
-											step="0.01"
-											bind:value={masterVolume}
-											class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
-										/>
-										<span class="text-sm text-gray-400">🔊</span>
-									</div>
-									<div class="text-center text-sm text-gray-400">
-										{Math.round(masterVolume * 100)}%
-									</div>
-								</div>
-
-								<div class="text-center text-base text-gray-300">
-									{#if isSynchronized}
-										<p class="text-lg">All sounds synchronized to {selectedKey} {selectedScale}</p>
-										<p class="mt-1 text-sm">Scale frequencies: {scaleFrequencies.length} notes</p>
-									{:else}
-										<p class="text-lg">Free mode - each square uses its own frequency</p>
-									{/if}
-								</div>
+							<div class="text-center text-base text-gray-300">
+								<p class="text-lg">All sounds synchronized to {selectedKey} {selectedScale}</p>
+								<p class="mt-1 text-sm">Scale frequencies: {scaleFrequencies.length} notes</p>
 							</div>
 						</div>
 					</div>
@@ -188,7 +221,9 @@
 					{scaleFrequencies}
 					{isSynchronized}
 					{masterVolume}
+					{currentSequenceStep}
 					currentChord={selectedChord}
+					on:interaction={startSequencerOnInteraction}
 				/>
 			</div>
 		</div>

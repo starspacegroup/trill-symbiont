@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+
+	const dispatch = createEventDispatcher();
 
 	// Props for circle of fifths integration
 	export let selectedKey = 'C';
@@ -8,6 +10,7 @@
 	export let isSynchronized = false;
 	export let currentChord = 'I';
 	export let masterVolume = 1.0; // New volume control prop
+	export let currentSequenceStep = 0; // Current step in the sequencer (0-7)
 
 	// Grid configuration
 	const GRID_SIZE = 8;
@@ -38,7 +41,7 @@
 	let rightClickActive = false;
 	let rightClickIndex: number | null = null;
 
-	// Oscillator controls for each square
+	// Oscillator controls for each square - initialized with harmonic defaults
 	let oscillatorControls: Array<{
 		primaryFreq: number;
 		primaryWave: OscillatorType;
@@ -54,26 +57,26 @@
 		.map(() => ({
 			primaryFreq: 1.0,
 			primaryWave: 'sine',
-			primaryGain: 1.0,
-			secondaryFreq: 1.5,
-			secondaryWave: 'sine',
-			secondaryGain: 0.5,
-			lfoFreq: 0.2,
+			primaryGain: 0.8,
+			secondaryFreq: 1.5, // Perfect fifth
+			secondaryWave: 'triangle',
+			secondaryGain: 0.4,
+			lfoFreq: 0.15,
 			lfoWave: 'sine',
-			lfoGain: 10
+			lfoGain: 8
 		}));
 
-	// Default settings for new square activations
+	// Default settings for new square activations - aligned with rule of fifths
 	let defaultOscillatorSettings = {
-		primaryFreq: 1.0,
+		primaryFreq: 1.0, // Root frequency
 		primaryWave: 'sine' as OscillatorType,
-		primaryGain: 1.0,
-		secondaryFreq: 1.5,
-		secondaryWave: 'sine' as OscillatorType,
-		secondaryGain: 0.5,
-		lfoFreq: 0.2,
+		primaryGain: 0.8, // Slightly lower for better mixing
+		secondaryFreq: 1.5, // Perfect fifth (3:2 ratio) - harmonically aligned
+		secondaryWave: 'triangle' as OscillatorType, // Triangle for warmth
+		secondaryGain: 0.4, // Balanced harmonic content
+		lfoFreq: 0.15, // Slower modulation for ambient feel
 		lfoWave: 'sine' as OscillatorType,
-		lfoGain: 10
+		lfoGain: 8 // Reduced for subtler modulation
 	};
 
 	// Musical parameters
@@ -290,6 +293,9 @@
 
 	// Toggle square state
 	async function toggleSquare(index: number) {
+		// Dispatch interaction event to start sequencer
+		dispatch('interaction');
+
 		if (!isAudioInitialized) {
 			await initAudio();
 		}
@@ -786,6 +792,21 @@
 		console.log(`Square ${index}: Volume ${volume} -> Lightness ${lightness}%`);
 		return lightness;
 	}
+
+	// Check if a square should glow based on current sequence step
+	function isSequenceActive(index: number): boolean {
+		// Get the column of the square (0-7)
+		const col = index % 8;
+		return col === currentSequenceStep;
+	}
+
+	// Get the sequencer glow class
+	function getSequencerGlowClass(index: number): string {
+		if (isSequenceActive(index)) {
+			return 'ring-4 ring-yellow-400 ring-opacity-75 animate-pulse';
+		}
+		return '';
+	}
 </script>
 
 <!-- Music Grid with Categories -->
@@ -813,6 +834,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
+							{@const sequencerGlow = getSequencerGlowClass(index)}
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -826,7 +848,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'}"
+									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
 								aria-label="Root note {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -859,6 +881,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
+							{@const sequencerGlow = getSequencerGlowClass(index)}
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -872,7 +895,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'}"
+									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
 								aria-label="Major 2nd {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -905,6 +928,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
+							{@const sequencerGlow = getSequencerGlowClass(index)}
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -918,7 +942,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'}"
+									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
 								aria-label="Major 3rd {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -951,6 +975,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
+							{@const sequencerGlow = getSequencerGlowClass(index)}
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -964,7 +989,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'}"
+									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
 								aria-label="Perfect 4th {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -997,6 +1022,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
+							{@const sequencerGlow = getSequencerGlowClass(index)}
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -1010,7 +1036,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'}"
+									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
 								aria-label="Perfect 5th {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -1043,6 +1069,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
+							{@const sequencerGlow = getSequencerGlowClass(index)}
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -1056,7 +1083,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'}"
+									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
 								aria-label="Major 6th {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -1089,6 +1116,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
+							{@const sequencerGlow = getSequencerGlowClass(index)}
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -1102,7 +1130,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'}"
+									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
 								aria-label="Major 7th {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -1135,6 +1163,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
+							{@const sequencerGlow = getSequencerGlowClass(index)}
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -1148,7 +1177,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'}"
+									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
 								aria-label="Octave {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -1175,7 +1204,10 @@
 	<div class="mb-6 space-y-4 text-center">
 		<div>
 			<button
-				on:click={initAudio}
+				on:click={() => {
+					initAudio();
+					dispatch('interaction');
+				}}
 				class="mr-4 rounded-lg bg-blue-600 px-8 py-4 text-lg font-medium transition-colors hover:bg-blue-700"
 				disabled={isAudioInitialized}
 			>
