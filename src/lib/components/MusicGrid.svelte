@@ -757,14 +757,16 @@
 	}
 
 	// Check if a square should glow based on current sequence step
+	// This function will be called reactively when currentSequenceStep changes
 	function isSequenceActive(index: number): boolean {
 		// Get the column of the square (0-7)
 		const col = index % 8;
 		return col === currentSequenceStep;
 	}
 
-	// Get the sequencer glow class
-	function getSequencerGlowClass(index: number): string {
+	// Get the sequencer glow class - called directly in template for reactivity
+	function getSequencerGlow(index: number): string {
+		// Reactively check if this index is in the current sequence column
 		if (isSequenceActive(index)) {
 			return 'ring-4 ring-yellow-400 ring-opacity-75 animate-pulse';
 		}
@@ -797,7 +799,6 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
-							{@const sequencerGlow = getSequencerGlowClass(index)}
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -811,7 +812,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
+									: 'bg-gray-700 hover:bg-gray-600'} {getSequencerGlow(index)}"
 								aria-label="Root note {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -844,7 +845,6 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
-							{@const sequencerGlow = getSequencerGlowClass(index)}
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -858,7 +858,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
+									: 'bg-gray-700 hover:bg-gray-600'} {getSequencerGlow(index)}"
 								aria-label="Major 2nd {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -891,7 +891,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
-							{@const sequencerGlow = getSequencerGlowClass(index)}
+
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -905,7 +905,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
+									: 'bg-gray-700 hover:bg-gray-600'} {getSequencerGlow(index)}"
 								aria-label="Major 3rd {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -938,7 +938,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
-							{@const sequencerGlow = getSequencerGlowClass(index)}
+
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -952,7 +952,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
+									: 'bg-gray-700 hover:bg-gray-600'} {getSequencerGlow(index)}"
 								aria-label="Perfect 4th {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -985,7 +985,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
-							{@const sequencerGlow = getSequencerGlowClass(index)}
+
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -999,7 +999,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
+									: 'bg-gray-700 hover:bg-gray-600'} {getSequencerGlow(index)}"
 								aria-label="Perfect 5th {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -1032,7 +1032,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
-							{@const sequencerGlow = getSequencerGlowClass(index)}
+
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -1046,7 +1046,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
+									: 'bg-gray-700 hover:bg-gray-600'} {getSequencerGlow(index)}"
 								aria-label="Major 6th {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -1079,7 +1079,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
-							{@const sequencerGlow = getSequencerGlowClass(index)}
+
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -1093,7 +1093,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
+									: 'bg-gray-700 hover:bg-gray-600'} {getSequencerGlow(index)}"
 								aria-label="Major 7th {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
@@ -1126,7 +1126,7 @@
 							{@const lightness = 50}
 							{@const primaryColor = 99}
 							{@const secondaryColor = 99}
-							{@const sequencerGlow = getSequencerGlowClass(index)}
+
 							<button
 								on:click={() => toggleSquare(index)}
 								on:mousedown|preventDefault={(e) => {
@@ -1140,7 +1140,7 @@
 									index
 								]
 									? 'border-2 shadow-lg'
-									: 'bg-gray-700 hover:bg-gray-600'} {sequencerGlow}"
+									: 'bg-gray-700 hover:bg-gray-600'} {getSequencerGlow(index)}"
 								aria-label="Octave {colIndex + 1}"
 								style={activeSquares[index]
 									? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
