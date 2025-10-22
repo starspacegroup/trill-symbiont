@@ -756,18 +756,15 @@
 		return lightness;
 	}
 
-	// Check if a square should glow based on current sequence step
-	// This function will be called reactively when currentSequenceStep changes
-	function isSequenceActive(index: number): boolean {
-		// Get the column of the square (0-7)
-		const col = index % 8;
-		return col === currentSequenceStep;
-	}
+	// Reactive computation of which column should glow
+	// This ensures Svelte tracks the dependency properly
+	$: sequencerGlowColumn = currentSequenceStep;
 
-	// Get the sequencer glow class - called directly in template for reactivity
+	// Get the sequencer glow class - now uses the reactive sequencerGlowColumn
 	function getSequencerGlow(index: number): string {
-		// Reactively check if this index is in the current sequence column
-		if (isSequenceActive(index)) {
+		// Get the column of the square (0-7) and compare to current step
+		const col = index % 8;
+		if (col === sequencerGlowColumn) {
 			return 'ring-4 ring-yellow-400 ring-opacity-75 animate-pulse';
 		}
 		return '';
