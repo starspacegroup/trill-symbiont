@@ -615,6 +615,33 @@
 		activeSquares = [...activeSquares];
 	}
 
+	// Reactive statement to trigger sounds based on sequencer step
+	$: if (currentSequenceStep !== undefined && isAudioInitialized) {
+		// Trigger brief sounds for all active squares in the current column
+		for (let row = 0; row < 8; row++) {
+			const index = row * 8 + currentSequenceStep;
+			if (activeSquares[index] && audioNodes[index]) {
+				// Briefly boost the gain to create a "trigger" effect
+				const components = audioNodes[index];
+				if (components && audioContext) {
+					try {
+						const currentGain = oscillatorControls[index].primaryGain * 0.05;
+						const boostGain = currentGain * 1.5; // 50% boost for trigger
+
+						components.squareGain.gain.cancelScheduledValues(audioContext.currentTime);
+						components.squareGain.gain.setValueAtTime(boostGain, audioContext.currentTime);
+						components.squareGain.gain.linearRampToValueAtTime(
+							currentGain,
+							audioContext.currentTime + 0.1
+						);
+					} catch (e) {
+						console.warn('Failed to trigger sequencer sound:', e);
+					}
+				}
+			}
+		}
+	}
+
 	// Get current chord frequencies for display
 	function getCurrentChordFrequencies(): number[] {
 		if (!isSynchronized || scaleFrequencies.length === 0) return [];

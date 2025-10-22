@@ -234,44 +234,10 @@
 				{/each}
 			</select>
 		</div>
-
-		<div class="control-group">
-			<label for="chord-select">Chord:</label>
-			<select
-				id="chord-select"
-				bind:value={selectedChord}
-				on:change={() => selectChord(selectedChord)}
-			>
-				{#each Object.keys(CHORD_PROGRESSIONS.major) as chord}
-					<option value={chord}>{chord}</option>
-				{/each}
-			</select>
-		</div>
-
-		<div class="control-group">
-			<label>
-				<input type="checkbox" bind:checked={showChordProgressions} />
-				Show Chords
-			</label>
-		</div>
-
-		<div class="control-group">
-			<label>
-				<input type="checkbox" bind:checked={showScaleDegrees} />
-				Show Degrees
-			</label>
-		</div>
-
-		{#if isSynchronized}
-			<div class="sync-indicator">
-				<div class="sync-light {isSynchronized ? 'active' : ''}"></div>
-				<span class="sync-text">Synchronized</span>
-			</div>
-		{/if}
 	</div>
 
 	<div class="circle-container">
-		<svg width="300" height="300" viewBox="0 0 300 300">
+		<svg width="300" height="300" viewBox="0 0 300 300" style="padding: 10px;">
 			<!-- Outer circle -->
 			<circle cx="150" cy="150" r="140" fill="none" stroke="#374151" stroke-width="2" />
 

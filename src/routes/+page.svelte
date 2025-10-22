@@ -235,24 +235,15 @@
 
 				{#if showCircleOfFifths}
 					<div class="border-t border-gray-700 p-6">
-						<div class="flex flex-col items-center justify-center gap-6 lg:flex-row">
-							<div class="flex-1">
-								<CircleOfFifths
-									{selectedKey}
-									{selectedScale}
-									{selectedChord}
-									{isSynchronized}
-									on:keyChange={handleKeyChange}
-									on:scaleChange={handleScaleChange}
-									on:chordChange={handleChordChange}
-								/>
-							</div>
-
-							<div class="text-center text-base text-gray-300">
-								<p class="text-lg">All sounds synchronized to {selectedKey} {selectedScale}</p>
-								<p class="mt-1 text-sm">Scale frequencies: {scaleFrequencies.length} notes</p>
-							</div>
-						</div>
+						<CircleOfFifths
+							{selectedKey}
+							{selectedScale}
+							{selectedChord}
+							{isSynchronized}
+							on:keyChange={handleKeyChange}
+							on:scaleChange={handleScaleChange}
+							on:chordChange={handleChordChange}
+						/>
 					</div>
 				{/if}
 			</div>
