@@ -41,11 +41,27 @@
 		showCircleOfFifths = !showCircleOfFifths;
 	}
 
-	// Start sequencer on any user interaction
-	function startSequencerOnInteraction() {
+	// Sequencer control functions
+	function playSequencer() {
 		if (!isSequencerRunning) {
 			isSequencerRunning = true;
 			runSequencer();
+		}
+	}
+
+	function pauseSequencer() {
+		isSequencerRunning = false;
+	}
+
+	function stopSequencer() {
+		isSequencerRunning = false;
+		currentSequenceStep = 0;
+	}
+
+	// Start sequencer on any user interaction
+	function startSequencerOnInteraction() {
+		if (!isSequencerRunning) {
+			playSequencer();
 		}
 	}
 
@@ -131,6 +147,36 @@
 					</div>
 					<div class="text-center text-sm text-gray-400">
 						{tempo} BPM
+					</div>
+				</div>
+
+				<!-- Sequencer Controls -->
+				<div class="mt-6 flex flex-col gap-3">
+					<label class="text-center text-lg font-medium">Sequencer</label>
+					<div class="flex items-center justify-center gap-3">
+						<button
+							on:click={playSequencer}
+							disabled={isSequencerRunning}
+							class="rounded-lg bg-green-600 px-6 py-2 text-lg font-medium transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							▶ Play
+						</button>
+						<button
+							on:click={pauseSequencer}
+							disabled={!isSequencerRunning}
+							class="rounded-lg bg-yellow-600 px-6 py-2 text-lg font-medium transition-colors hover:bg-yellow-700 disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							⏸ Pause
+						</button>
+						<button
+							on:click={stopSequencer}
+							class="rounded-lg bg-red-600 px-6 py-2 text-lg font-medium transition-colors hover:bg-red-700"
+						>
+							⏹ Stop
+						</button>
+					</div>
+					<div class="text-center text-sm text-gray-400">
+						{isSequencerRunning ? '▶ Running' : '⏸ Stopped'} - Step {currentSequenceStep + 1}/8
 					</div>
 				</div>
 			</div>

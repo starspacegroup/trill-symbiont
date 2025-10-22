@@ -25,7 +25,6 @@
 	let activeSquares: boolean[] = Array(TOTAL_SQUARES).fill(false);
 	let audioNodes: ({
 		primaryOsc: OscillatorNode;
-		secondaryOsc: OscillatorNode;
 		lfo: OscillatorNode;
 		squareGain: GainNode;
 	} | null)[] = Array(TOTAL_SQUARES).fill(null);
@@ -41,14 +40,11 @@
 	let rightClickActive = false;
 	let rightClickIndex: number | null = null;
 
-	// Oscillator controls for each square - initialized with harmonic defaults
+	// Oscillator controls for each square - simplified without secondary oscillator
 	let oscillatorControls: Array<{
 		primaryFreq: number;
 		primaryWave: OscillatorType;
 		primaryGain: number;
-		secondaryFreq: number;
-		secondaryWave: OscillatorType;
-		secondaryGain: number;
 		lfoFreq: number;
 		lfoWave: OscillatorType;
 		lfoGain: number;
@@ -57,26 +53,20 @@
 		.map(() => ({
 			primaryFreq: 1.0,
 			primaryWave: 'sine',
-			primaryGain: 0.8,
-			secondaryFreq: 1.5, // Perfect fifth
-			secondaryWave: 'triangle',
-			secondaryGain: 0.4,
+			primaryGain: 0.9, // 90% gain
 			lfoFreq: 0.15,
 			lfoWave: 'sine',
-			lfoGain: 8
+			lfoGain: 0 // LFO disabled by default
 		}));
 
 	// Default settings for new square activations - aligned with rule of fifths
 	let defaultOscillatorSettings = {
 		primaryFreq: 1.0, // Root frequency
 		primaryWave: 'sine' as OscillatorType,
-		primaryGain: 0.8, // Slightly lower for better mixing
-		secondaryFreq: 1.5, // Perfect fifth (3:2 ratio) - harmonically aligned
-		secondaryWave: 'triangle' as OscillatorType, // Triangle for warmth
-		secondaryGain: 0.4, // Balanced harmonic content
+		primaryGain: 0.9, // 90% gain as requested
 		lfoFreq: 0.15, // Slower modulation for ambient feel
 		lfoWave: 'sine' as OscillatorType,
-		lfoGain: 8 // Reduced for subtler modulation
+		lfoGain: 0 // LFO disabled by default
 	};
 
 	// Musical parameters
@@ -172,7 +162,6 @@
 	// Create ambient sound for a square
 	function createAmbientSound(index: number): {
 		primaryOsc: OscillatorNode;
-		secondaryOsc: OscillatorNode;
 		lfo: OscillatorNode;
 		squareGain: GainNode;
 	} | null {
@@ -211,19 +200,6 @@
 		primaryFilter.frequency.setValueAtTime(600 + index * 30, audioContext.currentTime);
 		primaryFilter.Q.setValueAtTime(0.7, audioContext.currentTime);
 
-		// Secondary oscillator for harmonic content
-		const secondaryOsc = audioContext.createOscillator();
-		const secondaryFilter = audioContext.createBiquadFilter();
-
-		// Use the same base frequency for secondary oscillator
-		secondaryOsc.frequency.setValueAtTime(
-			baseFrequency * controls.secondaryFreq,
-			audioContext!.currentTime
-		);
-		secondaryOsc.type = controls.secondaryWave;
-		secondaryFilter.type = 'highpass';
-		secondaryFilter.frequency.setValueAtTime(200, audioContext.currentTime);
-
 		// LFO for subtle modulation
 		const lfo = audioContext.createOscillator();
 		const lfoGain = audioContext.createGain();
@@ -240,25 +216,16 @@
 		primaryOsc.connect(primaryFilter);
 		primaryFilter.connect(squareGain);
 
-		// Connect secondary chain to square gain with gain control
-		const secondaryGain = audioContext.createGain();
-		secondaryGain.gain.value = 0.05 * oscillatorControls[index].secondaryGain;
-		secondaryOsc.connect(secondaryFilter);
-		secondaryFilter.connect(secondaryGain);
-		secondaryGain.connect(squareGain);
-
 		// Connect square gain to master
 		squareGain.connect(masterGain);
 
 		// Start oscillators
 		primaryOsc.start();
-		secondaryOsc.start();
 		lfo.start();
 
 		// Return all components for cleanup
 		return {
 			primaryOsc,
-			secondaryOsc,
 			lfo,
 			squareGain
 		};
@@ -268,7 +235,6 @@
 	function stopAmbientSound(
 		components: {
 			primaryOsc: OscillatorNode;
-			secondaryOsc: OscillatorNode;
 			lfo: OscillatorNode;
 			squareGain: GainNode;
 		} | null,
@@ -283,7 +249,6 @@
 		setTimeout(() => {
 			try {
 				components.primaryOsc.stop();
-				components.secondaryOsc.stop();
 				components.lfo.stop();
 			} catch (e) {
 				// Oscillators might already be stopped
@@ -442,7 +407,6 @@
 				try {
 					// Stop oscillators immediately without fade out
 					components.primaryOsc.stop();
-					components.secondaryOsc.stop();
 					components.lfo.stop();
 				} catch (e) {
 					// Oscillators might already be stopped
@@ -518,22 +482,6 @@
 				case 'primaryGain':
 					components.squareGain.gain.setValueAtTime(0.05 * value, audioContext!.currentTime);
 					break;
-				case 'secondaryFreq':
-					let baseFreq2: number;
-					if (isSynchronized && scaleFrequencies.length > 0) {
-						const scaleIndex = index % scaleFrequencies.length;
-						baseFreq2 = scaleFrequencies[scaleIndex];
-					} else {
-						baseFreq2 = baseFrequencies[index] || 200 + index * 10;
-					}
-					components.secondaryOsc.frequency.setValueAtTime(
-						baseFreq2 * value,
-						audioContext!.currentTime
-					);
-					break;
-				case 'secondaryWave':
-					components.secondaryOsc.type = value;
-					break;
 				case 'lfoFreq':
 					components.lfo.frequency.setValueAtTime(value, audioContext!.currentTime);
 					break;
@@ -541,7 +489,7 @@
 					components.lfo.type = value;
 					break;
 				case 'lfoGain':
-					// Find the LFO gain node (we need to store it)
+					// LFO gain is controlled via lfoGain parameter
 					break;
 			}
 		} catch (e) {
@@ -560,13 +508,10 @@
 		oscillatorControls[index] = {
 			primaryFreq: 1.0,
 			primaryWave: 'sine',
-			primaryGain: 1.0,
-			secondaryFreq: 1.5,
-			secondaryWave: 'sine',
-			secondaryGain: 0.5,
-			lfoFreq: 0.2,
+			primaryGain: 0.9, // 90% gain
+			lfoFreq: 0.15,
 			lfoWave: 'sine',
-			lfoGain: 10
+			lfoGain: 0 // LFO disabled by default
 		};
 		oscillatorControls = [...oscillatorControls];
 	}
@@ -588,8 +533,6 @@
 				updateOscillatorControl(index, 'primaryFreq', defaultOscillatorSettings.primaryFreq);
 				updateOscillatorControl(index, 'primaryWave', defaultOscillatorSettings.primaryWave);
 				updateOscillatorControl(index, 'primaryGain', defaultOscillatorSettings.primaryGain);
-				updateOscillatorControl(index, 'secondaryFreq', defaultOscillatorSettings.secondaryFreq);
-				updateOscillatorControl(index, 'secondaryWave', defaultOscillatorSettings.secondaryWave);
 				updateOscillatorControl(index, 'lfoFreq', defaultOscillatorSettings.lfoFreq);
 				updateOscillatorControl(index, 'lfoWave', defaultOscillatorSettings.lfoWave);
 			}
@@ -602,13 +545,10 @@
 		defaultOscillatorSettings = {
 			primaryFreq: 1.0,
 			primaryWave: 'sine',
-			primaryGain: 1.0,
-			secondaryFreq: 1.5,
-			secondaryWave: 'sine',
-			secondaryGain: 0.5,
-			lfoFreq: 0.2,
+			primaryGain: 0.9, // 90% gain
+			lfoFreq: 0.15,
 			lfoWave: 'sine',
-			lfoGain: 10
+			lfoGain: 0 // LFO disabled by default
 		};
 	}
 
@@ -658,10 +598,6 @@
 					try {
 						components.primaryOsc.frequency.setValueAtTime(
 							baseFreq * controls.primaryFreq,
-							audioContext!.currentTime
-						);
-						components.secondaryOsc.frequency.setValueAtTime(
-							baseFreq * controls.secondaryFreq,
 							audioContext!.currentTime
 						);
 					} catch (e) {
@@ -1374,66 +1310,6 @@
 					</div>
 				</div>
 
-				<!-- Secondary Oscillator Defaults -->
-				<div class="rounded-lg bg-gray-700 p-4">
-					<h4 class="mb-3 text-xl font-semibold text-purple-400">Secondary Oscillator</h4>
-					<div class="space-y-3">
-						<div>
-							<label for="default-secondary-freq" class="mb-1 block text-sm text-gray-400"
-								>Frequency Multiplier</label
-							>
-							<input
-								id="default-secondary-freq"
-								type="range"
-								min="0.1"
-								max="4.0"
-								step="0.1"
-								value={defaultOscillatorSettings.secondaryFreq}
-								on:input={(e) =>
-									updateDefaultSetting('secondaryFreq', parseFloat(e.currentTarget.value))}
-								class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-							/>
-							<span class="text-sm text-gray-500"
-								>{defaultOscillatorSettings.secondaryFreq.toFixed(1)}x</span
-							>
-						</div>
-						<div>
-							<label for="default-secondary-wave" class="mb-1 block text-sm text-gray-400"
-								>Waveform</label
-							>
-							<select
-								id="default-secondary-wave"
-								value={defaultOscillatorSettings.secondaryWave}
-								on:change={(e) => updateDefaultSetting('secondaryWave', e.currentTarget.value)}
-								class="w-full rounded border border-gray-500 bg-gray-600 px-2 py-1 text-sm text-white"
-							>
-								{#each waveTypes as waveType}
-									<option value={waveType}>{waveType}</option>
-								{/each}
-							</select>
-						</div>
-						<div>
-							<label for="default-secondary-gain" class="mb-1 block text-sm text-gray-400"
-								>Gain</label
-							>
-							<input
-								id="default-secondary-gain"
-								type="range"
-								min="0.1"
-								max="2.0"
-								step="0.1"
-								value={defaultOscillatorSettings.secondaryGain}
-								on:input={(e) =>
-									updateDefaultSetting('secondaryGain', parseFloat(e.currentTarget.value))}
-								class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-							/>
-							<span class="text-sm text-gray-500"
-								>{defaultOscillatorSettings.secondaryGain.toFixed(1)}</span
-							>
-						</div>
-					</div>
-				</div>
-
 				<!-- LFO Defaults -->
 				<div class="rounded-lg bg-gray-700 p-4">
 					<h4 class="mb-3 text-xl font-semibold text-green-400">LFO</h4>
@@ -1582,46 +1458,6 @@
 										<span class="text-sm text-gray-500"
 											>{oscillatorControls[index].primaryGain.toFixed(1)}</span
 										>
-									</div>
-								</div>
-							</div>
-
-							<!-- Secondary Oscillator Controls -->
-							<div class="mb-4">
-								<h5 class="mb-2 text-base font-medium text-gray-300">Secondary Oscillator</h5>
-								<div class="space-y-2">
-									<div>
-										<label class="mb-1 block text-sm text-gray-400">Frequency Multiplier</label>
-										<input
-											type="range"
-											min="0.1"
-											max="4.0"
-											step="0.1"
-											value={oscillatorControls[index].secondaryFreq}
-											on:input={(e) =>
-												updateOscillatorControl(
-													index,
-													'secondaryFreq',
-													parseFloat(e.currentTarget.value)
-												)}
-											class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-										/>
-										<span class="text-sm text-gray-500"
-											>{oscillatorControls[index].secondaryFreq.toFixed(1)}x</span
-										>
-									</div>
-									<div>
-										<label class="mb-1 block text-sm text-gray-400">Waveform</label>
-										<select
-											value={oscillatorControls[index].secondaryWave}
-											on:change={(e) =>
-												updateOscillatorControl(index, 'secondaryWave', e.currentTarget.value)}
-											class="w-full rounded border border-gray-500 bg-gray-600 px-2 py-1 text-sm text-white"
-										>
-											{#each waveTypes as waveType}
-												<option value={waveType}>{waveType}</option>
-											{/each}
-										</select>
 									</div>
 								</div>
 							</div>
