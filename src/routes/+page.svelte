@@ -7,8 +7,9 @@
 	let selectedScale = 'major';
 	let selectedChord = 'I';
 	let scaleFrequencies: number[] = [];
-	let isSynchronized = false;
+	let isSynchronized = true; // Default to synced mode for better music theory compliance
 	let showHelp = false;
+	let showCircleOfFifths = false; // Collapsed by default
 	let masterVolume = 1.0; // Master volume control (max by default)
 	
 	// Handle circle of fifths events
@@ -35,6 +36,10 @@
 	
 	function toggleHelp() {
 		showHelp = !showHelp;
+	}
+	
+	function toggleCircleOfFifths() {
+		showCircleOfFifths = !showCircleOfFifths;
 	}
 </script>
 
@@ -98,80 +103,89 @@
 		</div>
 		{/if}
 		
-		<div class="flex flex-col lg:flex-row gap-8">
-			<div>
+		<!-- Circle of Fifths Section - Collapsible at top -->
+		<div class="max-w-4xl mx-auto mb-8">
+			<div class="bg-gray-800 rounded-xl border border-gray-700">
+				<button
+					on:click={toggleCircleOfFifths}
+					class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-750 transition-colors rounded-t-xl"
+				>
+					<h2 class="text-2xl font-bold text-white">🎵 Rule of Fifths</h2>
+					<span class="text-2xl text-gray-400">{showCircleOfFifths ? '▼' : '▶'}</span>
+				</button>
 				
-				<!-- Music Grid -->
-				<MusicGrid
-				{selectedKey}
-				{selectedScale}
-				{scaleFrequencies}
-				{isSynchronized}
-				{masterVolume}
-				currentChord={selectedChord}
-				/>
-			</div>
-			
-			<div>
-				
-				<!-- Circle of Fifths Controls -->
-				<div class="max-w-4xl mx-auto mb-8">
+				{#if showCircleOfFifths}
+				<div class="p-6 border-t border-gray-700">
 					<div class="flex flex-col lg:flex-row gap-6 items-center justify-between">
 						<div class="flex-1">
 							<CircleOfFifths
-							{selectedKey}
-							{selectedScale}
-							{selectedChord}
-							{isSynchronized}
-							on:keyChange={handleKeyChange}
-							on:scaleChange={handleScaleChange}
-							on:chordChange={handleChordChange}
-						/>
-					</div>
-				
-					<div class="flex flex-col gap-4">
-						<button
-						on:click={toggleSynchronization}
-						class="px-8 py-4 rounded-lg font-medium transition-colors {isSynchronized ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-lg"
-						>
-					{isSynchronized ? 'Synchronized to Key' : 'Free Mode'}
-					</button>
-					
-					<!-- Master Volume Control -->
-					<div class="flex flex-col gap-2">
-						<label for="master-volume" class="text-lg font-medium text-center">Master Volume</label>
-						<div class="flex items-center gap-4">
-							<span class="text-sm text-gray-400">🔇</span>
-							<input
-								id="master-volume"
-								type="range"
-								min="0"
-								max="1"
-								step="0.01"
-								bind:value={masterVolume}
-								class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+								{selectedKey}
+								{selectedScale}
+								{selectedChord}
+								{isSynchronized}
+								on:keyChange={handleKeyChange}
+								on:scaleChange={handleScaleChange}
+								on:chordChange={handleChordChange}
 							/>
-							<span class="text-sm text-gray-400">🔊</span>
 						</div>
-						<div class="text-sm text-gray-400 text-center">
-							{Math.round(masterVolume * 100)}%
+						
+						<div class="flex flex-col gap-4">
+							<button
+								on:click={toggleSynchronization}
+								class="px-8 py-4 rounded-lg font-medium transition-colors {isSynchronized ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-lg"
+							>
+								{isSynchronized ? 'Synchronized to Key' : 'Free Mode'}
+							</button>
+							
+							<!-- Master Volume Control -->
+							<div class="flex flex-col gap-2">
+								<label for="master-volume" class="text-lg font-medium text-center">Master Volume</label>
+								<div class="flex items-center gap-4">
+									<span class="text-sm text-gray-400">🔇</span>
+									<input
+										id="master-volume"
+										type="range"
+										min="0"
+										max="1"
+										step="0.01"
+										bind:value={masterVolume}
+										class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+									/>
+									<span class="text-sm text-gray-400">🔊</span>
+								</div>
+								<div class="text-sm text-gray-400 text-center">
+									{Math.round(masterVolume * 100)}%
+								</div>
+							</div>
+							
+							<div class="text-base text-gray-300 text-center">
+								{#if isSynchronized}
+									<p class="text-lg">All sounds synchronized to {selectedKey} {selectedScale}</p>
+									<p class="text-sm mt-1">Scale frequencies: {scaleFrequencies.length} notes</p>
+								{:else}
+									<p class="text-lg">Free mode - each square uses its own frequency</p>
+								{/if}
+							</div>
 						</div>
-					</div>
-					
-				<div class="text-base text-gray-300 text-center">
-						{#if isSynchronized}
-						<p class="text-lg">All sounds synchronized to {selectedKey} {selectedScale}</p>
-						<p class="text-sm mt-1">Scale frequencies: {scaleFrequencies.length} notes</p>
-						{:else}
-						<p class="text-lg">Free mode - each square uses its own frequency</p>
-						{/if}
 					</div>
 				</div>
+				{/if}
 			</div>
 		</div>
-	</div>
 		
-	</div>
+		<!-- Music Grid -->
+		<div class="flex flex-col gap-8">
+			<div>
+				<MusicGrid
+					{selectedKey}
+					{selectedScale}
+					{scaleFrequencies}
+					{isSynchronized}
+					{masterVolume}
+					currentChord={selectedChord}
+				/>
+			</div>
+		</div>
 	</div>
 </main>
 

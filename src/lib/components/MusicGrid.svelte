@@ -791,40 +791,311 @@
 	}
 </style>
 	
-	<div class="grid grid-cols-8 gap-2 max-w-2xl mx-auto p-4 bg-gray-800 rounded-xl">
-		{#each Array(TOTAL_SQUARES) as _, index}
-			{@const currentFreq = getCurrentFrequency(index)}
-			{@const hue = frequencyToHue(currentFreq)}
-			{@const saturation = 100}
-			{@const lightness = 50}
-			{@const primaryColor = 99}
-			{@const secondaryColor = 99}
-			<!-- {@const primaryColor = activeSquares[index] ? `hsl(${hue}, ${saturation}%, ${lightness}%)` : ''} -->
-			<!-- {@const secondaryColor = activeSquares[index] ? `hsl(${(hue + 30) % 360}, ${saturation - 20}%, ${lightness - 10}%)` : ''} -->
-			{@const debugInfo = activeSquares[index] ? `Square ${index}: Freq=${currentFreq.toFixed(1)}Hz, Hue=${hue.toFixed(1)}°, Sat=${saturation}%, Light=${lightness}%, Primary=${primaryColor}` : ''}
-			{#if activeSquares[index]}
-				{console.log(debugInfo)}
-			{/if}
-			<button
-				on:click={() => toggleSquare(index)}
-				on:mousedown|preventDefault={(e) => {
-					if (e.button === 2) { // Right mouse button
-						handleRightMouseDown(index, e);
-					}
-				}}
-				on:contextmenu|preventDefault
-				on:mouseleave={handleMouseLeave}
-				class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index]
-					? 'shadow-lg border-2'
-					: 'bg-gray-700 hover:bg-gray-600'}"
-				aria-label="Square {index + 1}"
-				style="{activeSquares[index]
-					? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
-					: ''}"
-			>
-				<div class="w-full h-full rounded-lg transition-all duration-75 {activeSquares[index] ? 'animate-bounce bg-pink-600' : ''}" style="{activeSquares[index] ? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});` : ''}"></div>
-			</button>
-		{/each}
+	<!-- Music Grid with Categories -->
+	<div class="max-w-4xl mx-auto">
+		<div class="bg-gray-800 rounded-xl p-6 mb-4">
+			<h3 class="text-2xl font-bold text-white mb-4 text-center">Music Grid - Organized by Intervals</h3>
+			<p class="text-gray-400 text-center mb-6">Each row represents a different musical interval or harmonic relationship</p>
+			
+			<!-- Grid with labeled rows -->
+			<div class="space-y-4">
+				<!-- Row 1: Root (Tonic) -->
+				<div>
+					<div class="flex items-center mb-2">
+						<div class="w-32 text-sm font-semibold text-blue-400">Root (Tonic)</div>
+						<div class="grid grid-cols-8 gap-2 flex-1">
+							{#each Array(8) as _, colIndex}
+								{@const index = 0 * 8 + colIndex}
+								{@const currentFreq = getCurrentFrequency(index)}
+								{@const hue = frequencyToHue(currentFreq)}
+								{@const saturation = 100}
+								{@const lightness = 50}
+								{@const primaryColor = 99}
+								{@const secondaryColor = 99}
+								<button
+									on:click={() => toggleSquare(index)}
+									on:mousedown|preventDefault={(e) => {
+										if (e.button === 2) {
+											handleRightMouseDown(index, e);
+										}
+									}}
+									on:contextmenu|preventDefault
+									on:mouseleave={handleMouseLeave}
+									class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index]
+										? 'shadow-lg border-2'
+										: 'bg-gray-700 hover:bg-gray-600'}"
+									aria-label="Root note {colIndex + 1}"
+									style="{activeSquares[index]
+										? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
+										: ''}"
+								>
+									<div class="w-full h-full rounded-lg transition-all duration-75 {activeSquares[index] ? 'animate-bounce bg-pink-600' : ''}" style="{activeSquares[index] ? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});` : ''}"></div>
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+				
+				<!-- Row 2: Major 2nd -->
+				<div>
+					<div class="flex items-center mb-2">
+						<div class="w-32 text-sm font-semibold text-green-400">Major 2nd</div>
+						<div class="grid grid-cols-8 gap-2 flex-1">
+							{#each Array(8) as _, colIndex}
+								{@const index = 1 * 8 + colIndex}
+								{@const currentFreq = getCurrentFrequency(index)}
+								{@const hue = frequencyToHue(currentFreq)}
+								{@const saturation = 100}
+								{@const lightness = 50}
+								{@const primaryColor = 99}
+								{@const secondaryColor = 99}
+								<button
+									on:click={() => toggleSquare(index)}
+									on:mousedown|preventDefault={(e) => {
+										if (e.button === 2) {
+											handleRightMouseDown(index, e);
+										}
+									}}
+									on:contextmenu|preventDefault
+									on:mouseleave={handleMouseLeave}
+									class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index]
+										? 'shadow-lg border-2'
+										: 'bg-gray-700 hover:bg-gray-600'}"
+									aria-label="Major 2nd {colIndex + 1}"
+									style="{activeSquares[index]
+										? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
+										: ''}"
+								>
+									<div class="w-full h-full rounded-lg transition-all duration-75 {activeSquares[index] ? 'animate-bounce bg-pink-600' : ''}" style="{activeSquares[index] ? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});` : ''}"></div>
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+				
+				<!-- Row 3: Major 3rd -->
+				<div>
+					<div class="flex items-center mb-2">
+						<div class="w-32 text-sm font-semibold text-yellow-400">Major 3rd</div>
+						<div class="grid grid-cols-8 gap-2 flex-1">
+							{#each Array(8) as _, colIndex}
+								{@const index = 2 * 8 + colIndex}
+								{@const currentFreq = getCurrentFrequency(index)}
+								{@const hue = frequencyToHue(currentFreq)}
+								{@const saturation = 100}
+								{@const lightness = 50}
+								{@const primaryColor = 99}
+								{@const secondaryColor = 99}
+								<button
+									on:click={() => toggleSquare(index)}
+									on:mousedown|preventDefault={(e) => {
+										if (e.button === 2) {
+											handleRightMouseDown(index, e);
+										}
+									}}
+									on:contextmenu|preventDefault
+									on:mouseleave={handleMouseLeave}
+									class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index]
+										? 'shadow-lg border-2'
+										: 'bg-gray-700 hover:bg-gray-600'}"
+									aria-label="Major 3rd {colIndex + 1}"
+									style="{activeSquares[index]
+										? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
+										: ''}"
+								>
+									<div class="w-full h-full rounded-lg transition-all duration-75 {activeSquares[index] ? 'animate-bounce bg-pink-600' : ''}" style="{activeSquares[index] ? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});` : ''}"></div>
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+				
+				<!-- Row 4: Perfect 4th -->
+				<div>
+					<div class="flex items-center mb-2">
+						<div class="w-32 text-sm font-semibold text-orange-400">Perfect 4th</div>
+						<div class="grid grid-cols-8 gap-2 flex-1">
+							{#each Array(8) as _, colIndex}
+								{@const index = 3 * 8 + colIndex}
+								{@const currentFreq = getCurrentFrequency(index)}
+								{@const hue = frequencyToHue(currentFreq)}
+								{@const saturation = 100}
+								{@const lightness = 50}
+								{@const primaryColor = 99}
+								{@const secondaryColor = 99}
+								<button
+									on:click={() => toggleSquare(index)}
+									on:mousedown|preventDefault={(e) => {
+										if (e.button === 2) {
+											handleRightMouseDown(index, e);
+										}
+									}}
+									on:contextmenu|preventDefault
+									on:mouseleave={handleMouseLeave}
+									class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index]
+										? 'shadow-lg border-2'
+										: 'bg-gray-700 hover:bg-gray-600'}"
+									aria-label="Perfect 4th {colIndex + 1}"
+									style="{activeSquares[index]
+										? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
+										: ''}"
+								>
+									<div class="w-full h-full rounded-lg transition-all duration-75 {activeSquares[index] ? 'animate-bounce bg-pink-600' : ''}" style="{activeSquares[index] ? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});` : ''}"></div>
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+				
+				<!-- Row 5: Perfect 5th -->
+				<div>
+					<div class="flex items-center mb-2">
+						<div class="w-32 text-sm font-semibold text-red-400">Perfect 5th</div>
+						<div class="grid grid-cols-8 gap-2 flex-1">
+							{#each Array(8) as _, colIndex}
+								{@const index = 4 * 8 + colIndex}
+								{@const currentFreq = getCurrentFrequency(index)}
+								{@const hue = frequencyToHue(currentFreq)}
+								{@const saturation = 100}
+								{@const lightness = 50}
+								{@const primaryColor = 99}
+								{@const secondaryColor = 99}
+								<button
+									on:click={() => toggleSquare(index)}
+									on:mousedown|preventDefault={(e) => {
+										if (e.button === 2) {
+											handleRightMouseDown(index, e);
+										}
+									}}
+									on:contextmenu|preventDefault
+									on:mouseleave={handleMouseLeave}
+									class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index]
+										? 'shadow-lg border-2'
+										: 'bg-gray-700 hover:bg-gray-600'}"
+									aria-label="Perfect 5th {colIndex + 1}"
+									style="{activeSquares[index]
+										? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
+										: ''}"
+								>
+									<div class="w-full h-full rounded-lg transition-all duration-75 {activeSquares[index] ? 'animate-bounce bg-pink-600' : ''}" style="{activeSquares[index] ? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});` : ''}"></div>
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+				
+				<!-- Row 6: Major 6th -->
+				<div>
+					<div class="flex items-center mb-2">
+						<div class="w-32 text-sm font-semibold text-purple-400">Major 6th</div>
+						<div class="grid grid-cols-8 gap-2 flex-1">
+							{#each Array(8) as _, colIndex}
+								{@const index = 5 * 8 + colIndex}
+								{@const currentFreq = getCurrentFrequency(index)}
+								{@const hue = frequencyToHue(currentFreq)}
+								{@const saturation = 100}
+								{@const lightness = 50}
+								{@const primaryColor = 99}
+								{@const secondaryColor = 99}
+								<button
+									on:click={() => toggleSquare(index)}
+									on:mousedown|preventDefault={(e) => {
+										if (e.button === 2) {
+											handleRightMouseDown(index, e);
+										}
+									}}
+									on:contextmenu|preventDefault
+									on:mouseleave={handleMouseLeave}
+									class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index]
+										? 'shadow-lg border-2'
+										: 'bg-gray-700 hover:bg-gray-600'}"
+									aria-label="Major 6th {colIndex + 1}"
+									style="{activeSquares[index]
+										? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
+										: ''}"
+								>
+									<div class="w-full h-full rounded-lg transition-all duration-75 {activeSquares[index] ? 'animate-bounce bg-pink-600' : ''}" style="{activeSquares[index] ? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});` : ''}"></div>
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+				
+				<!-- Row 7: Major 7th -->
+				<div>
+					<div class="flex items-center mb-2">
+						<div class="w-32 text-sm font-semibold text-pink-400">Major 7th</div>
+						<div class="grid grid-cols-8 gap-2 flex-1">
+							{#each Array(8) as _, colIndex}
+								{@const index = 6 * 8 + colIndex}
+								{@const currentFreq = getCurrentFrequency(index)}
+								{@const hue = frequencyToHue(currentFreq)}
+								{@const saturation = 100}
+								{@const lightness = 50}
+								{@const primaryColor = 99}
+								{@const secondaryColor = 99}
+								<button
+									on:click={() => toggleSquare(index)}
+									on:mousedown|preventDefault={(e) => {
+										if (e.button === 2) {
+											handleRightMouseDown(index, e);
+										}
+									}}
+									on:contextmenu|preventDefault
+									on:mouseleave={handleMouseLeave}
+									class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index]
+										? 'shadow-lg border-2'
+										: 'bg-gray-700 hover:bg-gray-600'}"
+									aria-label="Major 7th {colIndex + 1}"
+									style="{activeSquares[index]
+										? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
+										: ''}"
+								>
+									<div class="w-full h-full rounded-lg transition-all duration-75 {activeSquares[index] ? 'animate-bounce bg-pink-600' : ''}" style="{activeSquares[index] ? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});` : ''}"></div>
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+				
+				<!-- Row 8: Octave -->
+				<div>
+					<div class="flex items-center mb-2">
+						<div class="w-32 text-sm font-semibold text-cyan-400">Octave</div>
+						<div class="grid grid-cols-8 gap-2 flex-1">
+							{#each Array(8) as _, colIndex}
+								{@const index = 7 * 8 + colIndex}
+								{@const currentFreq = getCurrentFrequency(index)}
+								{@const hue = frequencyToHue(currentFreq)}
+								{@const saturation = 100}
+								{@const lightness = 50}
+								{@const primaryColor = 99}
+								{@const secondaryColor = 99}
+								<button
+									on:click={() => toggleSquare(index)}
+									on:mousedown|preventDefault={(e) => {
+										if (e.button === 2) {
+											handleRightMouseDown(index, e);
+										}
+									}}
+									on:contextmenu|preventDefault
+									on:mouseleave={handleMouseLeave}
+									class="aspect-square rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 {activeSquares[index]
+										? 'shadow-lg border-2'
+										: 'bg-gray-700 hover:bg-gray-600'}"
+									aria-label="Octave {colIndex + 1}"
+									style="{activeSquares[index]
+										? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor}); box-shadow: 0 0 15px ${primaryColor}; border-color: ${primaryColor}; border-width: 2px;`
+										: ''}"
+								>
+									<div class="w-full h-full rounded-lg transition-all duration-75 {activeSquares[index] ? 'animate-bounce bg-pink-600' : ''}" style="{activeSquares[index] ? `background: linear-gradient(135deg, ${primaryColor}, ${secondaryColor});` : ''}"></div>
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 
 	<div class="max-w-4xl mx-auto">
