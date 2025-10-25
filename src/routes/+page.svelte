@@ -11,7 +11,7 @@
 	let showHelp = false;
 	let showCircleOfFifths = false; // Collapsed by default
 	let masterVolume = 1.0; // Master volume control (max by default)
-	let tempo = 120; // BPS (beats per second) for sequencer
+	let tempo = 120; // BPM (beats per minute) for sequencer
 	let isSequencerRunning = false;
 	let currentSequenceStep = 0;
 
@@ -69,10 +69,10 @@
 	function runSequencer() {
 		if (!isSequencerRunning) return;
 
-		// Calculate interval based on tempo (BPS - beats per second)
-		// At 120 BPS, each beat is ~8.33ms (1000ms / 120)
-		// We'll use 8 steps per sequence
-		const intervalMs = 1000 / tempo / 2; // Half beat per step
+		// Calculate interval based on tempo (BPM - beats per minute)
+		// At 120 BPM, each beat is 500ms (60000ms / 120)
+		// We'll use 8 steps per sequence, with each step being a half beat
+		const intervalMs = 60000 / tempo / 2; // Half beat per step
 
 		setTimeout(() => {
 			currentSequenceStep = (currentSequenceStep + 1) % 8;
@@ -136,17 +136,17 @@
 						<input
 							id="tempo"
 							type="range"
-							min="1"
-							max="9999"
+							min="40"
+							max="240"
 							step="1"
 							bind:value={tempo}
 							on:input={startSequencerOnInteraction}
 							class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
 						/>
-						<span class="text-sm text-gray-400">🚀</span>
+						<span class="text-sm text-gray-400">🐇</span>
 					</div>
 					<div class="text-center text-sm text-gray-400">
-						{tempo} BPS
+						{tempo} BPM
 					</div>
 				</div>
 
