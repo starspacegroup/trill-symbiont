@@ -1,6 +1,6 @@
-import adapter from "@sveltejs/adapter-cloudflare";
-import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
-import { build } from "vite";
+import adapter from '@sveltejs/adapter-cloudflare';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { build } from 'vite';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -11,11 +11,11 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		alias: {
-			$lib: "src/lib",
-			$components: "src/lib/components",
-			$routes: "src/routes",
-		},
-	},
+			$lib: 'src/lib',
+			$components: 'src/lib/components',
+			$routes: 'src/routes'
+		}
+	}
 };
 
 export default config;
