@@ -13,7 +13,8 @@
 	let masterVolume = 1.0; // Master volume control (max by default)
 	let tempo = 120; // BPM (beats per minute) for sequencer
 	let isSequencerRunning = false;
-	let currentSequenceStep = 0;
+	let currentSequenceStep = -1; // -1 means no active step
+	let sequencerTimeoutId: number | null = null; // Track the timeout for cleanup
 
 	// Handle circle of fifths events
 	function handleKeyChange(event: CustomEvent) {
@@ -45,25 +46,44 @@
 	function playSequencer() {
 		if (!isSequencerRunning) {
 			isSequencerRunning = true;
+			// Only reset to step 0 if we're at -1 (fully stopped)
+			if (currentSequenceStep < 0) {
+				currentSequenceStep = 0;
+			}
+			// Otherwise, resume from current step
 			runSequencer();
 		}
 	}
 
 	function pauseSequencer() {
 		isSequencerRunning = false;
+		// Clear any pending timeout
+		if (sequencerTimeoutId !== null) {
+			clearTimeout(sequencerTimeoutId);
+			sequencerTimeoutId = null;
+		}
+		// Keep currentSequenceStep as is (don't reset to -1)
+	}
+
+	function togglePlayPause() {
+		if (isSequencerRunning) {
+			pauseSequencer();
+		} else {
+			playSequencer();
+		}
 	}
 
 	function stopSequencer() {
 		isSequencerRunning = false;
-		currentSequenceStep = 0;
+		// Clear any pending timeout
+		if (sequencerTimeoutId !== null) {
+			clearTimeout(sequencerTimeoutId);
+			sequencerTimeoutId = null;
+		}
+		currentSequenceStep = -1; // Reset to no active step
 	}
 
-	// Start sequencer on any user interaction
-	function startSequencerOnInteraction() {
-		if (!isSequencerRunning) {
-			playSequencer();
-		}
-	}
+	// Note: Removed auto-start on interaction - user must explicitly play sequencer
 
 	// Sequencer function
 	function runSequencer() {
@@ -74,10 +94,11 @@
 		// We'll use 8 steps per sequence, with each step being a half beat
 		const intervalMs = 60000 / tempo / 2; // Half beat per step
 
-		setTimeout(() => {
+		sequencerTimeoutId = setTimeout(() => {
+			if (!isSequencerRunning) return; // Double-check we're still running
 			currentSequenceStep = (currentSequenceStep + 1) % 8;
 			runSequencer();
-		}, intervalMs);
+		}, intervalMs) as unknown as number;
 	}
 </script>
 
@@ -118,7 +139,6 @@
 							max="1"
 							step="0.01"
 							bind:value={masterVolume}
-							on:input={startSequencerOnInteraction}
 							class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
 						/>
 						<span class="text-sm text-gray-400">🔊</span>
@@ -140,7 +160,6 @@
 							max="240"
 							step="1"
 							bind:value={tempo}
-							on:input={startSequencerOnInteraction}
 							class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
 						/>
 						<span class="text-sm text-gray-400">🐇</span>
@@ -155,18 +174,12 @@
 					<label class="text-center text-lg font-medium">Sequencer</label>
 					<div class="flex items-center justify-center gap-3">
 						<button
-							on:click={playSequencer}
-							disabled={isSequencerRunning}
-							class="rounded-lg bg-green-600 px-6 py-2 text-lg font-medium transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+							on:click={togglePlayPause}
+							class="rounded-lg px-6 py-2 text-lg font-medium transition-colors {isSequencerRunning
+								? 'bg-yellow-600 hover:bg-yellow-700'
+								: 'bg-green-600 hover:bg-green-700'}"
 						>
-							▶ Play
-						</button>
-						<button
-							on:click={pauseSequencer}
-							disabled={!isSequencerRunning}
-							class="rounded-lg bg-yellow-600 px-6 py-2 text-lg font-medium transition-colors hover:bg-yellow-700 disabled:cursor-not-allowed disabled:opacity-50"
-						>
-							⏸ Pause
+							{isSequencerRunning ? '⏸ Pause' : '▶ Play'}
 						</button>
 						<button
 							on:click={stopSequencer}
@@ -176,7 +189,7 @@
 						</button>
 					</div>
 					<div class="text-center text-sm text-gray-400">
-						{isSequencerRunning ? '▶ Running' : '⏸ Stopped'} - Step {currentSequenceStep + 1}/8
+						{isSequencerRunning ? '▶ Running' : currentSequenceStep >= 0 ? '⏸ Paused' : '⏹ Stopped'} - Step {currentSequenceStep >= 0 ? currentSequenceStep + 1 : '-'}/8
 					</div>
 				</div>
 			</div>
@@ -260,7 +273,6 @@
 					{masterVolume}
 					{currentSequenceStep}
 					currentChord={selectedChord}
-					on:interaction={startSequencerOnInteraction}
 				/>
 			</div>
 		</div>
