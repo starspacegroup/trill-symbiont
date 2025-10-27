@@ -37,6 +37,9 @@
 	// Track triggered squares for animation
 	let triggeredSquares: boolean[] = Array(TOTAL_SQUARES).fill(false);
 
+	// Track which control modules are expanded
+	let expandedControls: boolean[] = Array(TOTAL_SQUARES).fill(false);
+
 	let oscillatorControls: Array<{
 		primaryFreq: number;
 		primaryWave: OscillatorType;
@@ -440,13 +443,17 @@
 	}
 
 	function updateOscillatorControl(index: number, param: string, value: number | OscillatorType) {
-		if (!audioContext || !audioNodes[index]) return;
-
+		// Always update the control values
 		const newControls = [...oscillatorControls];
 		if (param in newControls[index]) {
 			(newControls[index] as Record<string, number | OscillatorType>)[param] = value;
 		}
 		oscillatorControls = newControls;
+
+		// If audio is active, also update the live audio parameters
+		if (!audioContext || !audioNodes[index]) {
+			return;
+		}
 
 		const components = audioNodes[index];
 		if (!components) return;
@@ -548,6 +555,160 @@
 			lfoGain: 10,
 			lfoDecay: 0.5
 		};
+	}
+
+	// Toggle expanded state for control modules
+	function toggleControlExpanded(index: number) {
+		expandedControls[index] = !expandedControls[index];
+		expandedControls = [...expandedControls];
+	}
+
+	// Knob control functions
+	let knobDragState: {
+		active: boolean;
+		index: number;
+		param: string;
+		min: number;
+		max: number;
+		startY: number;
+		startX: number;
+		startValue: number;
+	} | null = null;
+
+	function getKnobAngle(value: number, min: number, max: number): number {
+		const normalized = (value - min) / (max - min);
+		// Map 0-1 to -135° to +135° (270° range)
+		const angle = -135 + normalized * 270;
+		return (angle * Math.PI) / 180; // Convert to radians
+	}
+
+	function getKnobArc(value: number, min: number, max: number): string {
+		const normalized = (value - min) / (max - min);
+		const angle = -135 + normalized * 270;
+		
+		const startAngle = -135;
+		const endAngle = angle;
+		
+		const startRad = (startAngle * Math.PI) / 180;
+		const endRad = (endAngle * Math.PI) / 180;
+		
+		const startX = 50 + 40 * Math.cos(startRad);
+		const startY = 50 + 40 * Math.sin(startRad);
+		const endX = 50 + 40 * Math.cos(endRad);
+		const endY = 50 + 40 * Math.sin(endRad);
+		
+		const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+		
+		return `M 50 50 L ${startX} ${startY} A 40 40 0 ${largeArc} 1 ${endX} ${endY} Z`;
+	}
+
+	function startKnobDrag(event: MouseEvent, index: number, param: string, min: number, max: number) {
+		event.preventDefault();
+		event.stopPropagation();
+		
+		const currentValue = oscillatorControls[index][param as keyof typeof oscillatorControls[number]] as number;
+		
+		console.log('Starting knob drag:', { index, param, currentValue, startX: event.clientX, startY: event.clientY });
+		
+		knobDragState = {
+			active: true,
+			index,
+			param,
+			min,
+			max,
+			startY: event.clientY,
+			startX: event.clientX,
+			startValue: currentValue
+		};
+
+		const handleMouseMove = (e: MouseEvent) => {
+			if (!knobDragState) return;
+			
+			// Calculate deltas for both vertical and horizontal movement
+			const deltaY = knobDragState.startY - e.clientY;
+			const deltaX = e.clientX - knobDragState.startX;
+			
+			// Combine both movements - use whichever has greater magnitude
+			const combinedDelta = Math.abs(deltaY) > Math.abs(deltaX) ? deltaY : deltaX;
+			
+			const range = knobDragState.max - knobDragState.min;
+			const sensitivity = range / 200; // 200 pixels = full range
+			const newValue = Math.max(
+				knobDragState.min,
+				Math.min(knobDragState.max, knobDragState.startValue + combinedDelta * sensitivity)
+			);
+			
+			console.log('Mouse move:', { deltaY, deltaX, combinedDelta, newValue });
+			
+			updateOscillatorControl(knobDragState.index, knobDragState.param, newValue);
+		};
+
+		const handleMouseUp = () => {
+			console.log('Mouse up - ending drag');
+			knobDragState = null;
+			document.removeEventListener('mousemove', handleMouseMove);
+			document.removeEventListener('mouseup', handleMouseUp);
+		};
+
+		document.addEventListener('mousemove', handleMouseMove);
+		document.addEventListener('mouseup', handleMouseUp);
+	}
+
+	// Knob drag state for default settings
+	let defaultKnobDragState: {
+		active: boolean;
+		param: string;
+		min: number;
+		max: number;
+		startY: number;
+		startX: number;
+		startValue: number;
+	} | null = null;
+
+	function startDefaultKnobDrag(event: MouseEvent, param: string, min: number, max: number) {
+		event.preventDefault();
+		event.stopPropagation();
+		
+		const currentValue = defaultOscillatorSettings[param as keyof typeof defaultOscillatorSettings] as number;
+		
+		defaultKnobDragState = {
+			active: true,
+			param,
+			min,
+			max,
+			startY: event.clientY,
+			startX: event.clientX,
+			startValue: currentValue
+		};
+
+		const handleMouseMove = (e: MouseEvent) => {
+			if (!defaultKnobDragState) return;
+			
+			// Calculate deltas for both vertical and horizontal movement
+			const deltaY = defaultKnobDragState.startY - e.clientY;
+			const deltaX = e.clientX - defaultKnobDragState.startX;
+			
+			// Combine both movements - use whichever has greater magnitude
+			const combinedDelta = Math.abs(deltaY) > Math.abs(deltaX) ? deltaY : deltaX;
+			
+			const range = defaultKnobDragState.max - defaultKnobDragState.min;
+			const sensitivity = range / 200; // 200 pixels = full range
+			const newValue = Math.max(
+				defaultKnobDragState.min,
+				Math.min(defaultKnobDragState.max, defaultKnobDragState.startValue + combinedDelta * sensitivity)
+			);
+			
+			updateDefaultSetting(defaultKnobDragState.param, newValue);
+		};
+
+		const handleMouseUp = () => {
+			defaultKnobDragState = null;
+			document.removeEventListener('mousemove', handleMouseMove);
+			document.removeEventListener('mouseup', handleMouseUp);
+		};
+
+		document.addEventListener('mousemove', handleMouseMove);
+		document.addEventListener('mouseup', handleMouseUp);
 	}
 
 	onDestroy(() => {
@@ -860,8 +1021,9 @@
 		</div>
 
 		<div class="mt-4 flex items-center justify-center gap-4">
-			<label class="text-base text-gray-300">Evolution Speed:</label>
+			<label for="evolution-speed" class="text-base text-gray-300">Evolution Speed:</label>
 			<input
+				id="evolution-speed"
 				type="range"
 				min="100"
 				max="2000"
@@ -912,30 +1074,67 @@
 			<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 				<div class="rounded-lg bg-gray-700 p-4">
 					<h4 class="mb-3 text-xl font-semibold text-blue-400">Primary Oscillator</h4>
-					<div class="space-y-3">
-						<div>
-							<label for="default-primary-freq" class="mb-1 block text-sm text-gray-400"
-								>Frequency Multiplier</label
+					<div class="grid grid-cols-2 gap-4">
+						<div class="flex flex-col items-center">
+							<span class="mb-1 text-sm text-gray-400">Frequency</span>
+							<div 
+								class="knob-container-default" 
+								role="slider"
+								aria-label="Default Primary Frequency"
+								aria-valuemin="0.25"
+								aria-valuemax="2.0"
+								aria-valuenow={defaultOscillatorSettings.primaryFreq}
+								tabindex="0"
+								on:mousedown={(e) => startDefaultKnobDrag(e, 'primaryFreq', 0.25, 2.0)}
 							>
-							<input
-								id="default-primary-freq"
-								type="range"
-								min="0.25"
-								max="2.0"
-								step="0.25"
-								value={defaultOscillatorSettings.primaryFreq}
-								on:input={(e) =>
-									updateDefaultSetting('primaryFreq', parseFloat(e.currentTarget.value))}
-								class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-							/>
-							<span class="text-sm text-gray-500"
-								>{defaultOscillatorSettings.primaryFreq.toFixed(2)}x</span
-							>
+								<svg class="knob" viewBox="0 0 100 100">
+									<circle cx="50" cy="50" r="40" class="knob-track" />
+									<path
+										d={getKnobArc(defaultOscillatorSettings.primaryFreq, 0.25, 2.0)}
+										class="knob-fill"
+									/>
+									<line
+										x1="50"
+										y1="50"
+										x2={50 + 35 * Math.cos(getKnobAngle(defaultOscillatorSettings.primaryFreq, 0.25, 2.0))}
+										y2={50 + 35 * Math.sin(getKnobAngle(defaultOscillatorSettings.primaryFreq, 0.25, 2.0))}
+										class="knob-pointer"
+									/>
+								</svg>
+							</div>
+							<span class="text-sm text-gray-500">{defaultOscillatorSettings.primaryFreq.toFixed(2)}x</span>
 						</div>
-						<div>
-							<label for="default-primary-wave" class="mb-1 block text-sm text-gray-400"
-								>Waveform</label
+						<div class="flex flex-col items-center">
+							<span class="mb-1 text-sm text-gray-400">Gain</span>
+							<div 
+								class="knob-container-default" 
+								role="slider"
+								aria-label="Default Primary Gain"
+								aria-valuemin="0.1"
+								aria-valuemax="1.5"
+								aria-valuenow={defaultOscillatorSettings.primaryGain}
+								tabindex="0"
+								on:mousedown={(e) => startDefaultKnobDrag(e, 'primaryGain', 0.1, 1.5)}
 							>
+								<svg class="knob" viewBox="0 0 100 100">
+									<circle cx="50" cy="50" r="40" class="knob-track" />
+									<path
+										d={getKnobArc(defaultOscillatorSettings.primaryGain, 0.1, 1.5)}
+										class="knob-fill"
+									/>
+									<line
+										x1="50"
+										y1="50"
+										x2={50 + 35 * Math.cos(getKnobAngle(defaultOscillatorSettings.primaryGain, 0.1, 1.5))}
+										y2={50 + 35 * Math.sin(getKnobAngle(defaultOscillatorSettings.primaryGain, 0.1, 1.5))}
+										class="knob-pointer"
+									/>
+								</svg>
+							</div>
+							<span class="text-sm text-gray-500">{defaultOscillatorSettings.primaryGain.toFixed(1)}</span>
+						</div>
+						<div class="flex flex-col items-center">
+							<label for="default-primary-wave" class="mb-1 text-sm text-gray-400">Waveform</label>
 							<select
 								id="default-primary-wave"
 								value={defaultOscillatorSettings.primaryWave}
@@ -947,69 +1146,101 @@
 								{/each}
 							</select>
 						</div>
-						<div>
-							<label for="default-primary-gain" class="mb-1 block text-sm text-gray-400">Gain</label
+						<div class="flex flex-col items-center">
+							<span class="mb-1 text-sm text-gray-400">Decay</span>
+							<div 
+								class="knob-container-default" 
+								role="slider"
+								aria-label="Default Primary Decay"
+								aria-valuemin="0.1"
+								aria-valuemax="2.0"
+								aria-valuenow={defaultOscillatorSettings.primaryDecay}
+								tabindex="0"
+								on:mousedown={(e) => startDefaultKnobDrag(e, 'primaryDecay', 0.1, 2.0)}
 							>
-							<input
-								id="default-primary-gain"
-								type="range"
-								min="0.1"
-								max="1.5"
-								step="0.1"
-								value={defaultOscillatorSettings.primaryGain}
-								on:input={(e) =>
-									updateDefaultSetting('primaryGain', parseFloat(e.currentTarget.value))}
-								class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-							/>
-							<span class="text-sm text-gray-500"
-								>{defaultOscillatorSettings.primaryGain.toFixed(1)}</span
-							>
-						</div>
-						<div>
-							<label for="default-primary-decay" class="mb-1 block text-sm text-gray-400">Decay (s)</label
-							>
-							<input
-								id="default-primary-decay"
-								type="range"
-								min="0.1"
-								max="2.0"
-								step="0.1"
-								value={defaultOscillatorSettings.primaryDecay}
-								on:input={(e) =>
-									updateDefaultSetting('primaryDecay', parseFloat(e.currentTarget.value))}
-								class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-							/>
-							<span class="text-sm text-gray-500"
-								>{defaultOscillatorSettings.primaryDecay.toFixed(1)}s</span
-							>
+								<svg class="knob" viewBox="0 0 100 100">
+									<circle cx="50" cy="50" r="40" class="knob-track" />
+									<path
+										d={getKnobArc(defaultOscillatorSettings.primaryDecay, 0.1, 2.0)}
+										class="knob-fill"
+									/>
+									<line
+										x1="50"
+										y1="50"
+										x2={50 + 35 * Math.cos(getKnobAngle(defaultOscillatorSettings.primaryDecay, 0.1, 2.0))}
+										y2={50 + 35 * Math.sin(getKnobAngle(defaultOscillatorSettings.primaryDecay, 0.1, 2.0))}
+										class="knob-pointer"
+									/>
+								</svg>
+							</div>
+							<span class="text-sm text-gray-500">{defaultOscillatorSettings.primaryDecay.toFixed(1)}s</span>
 						</div>
 					</div>
 				</div>
 
 				<div class="rounded-lg bg-gray-700 p-4">
 					<h4 class="mb-3 text-xl font-semibold text-green-400">LFO (Modulation)</h4>
-					<div class="space-y-3">
-						<div>
-							<label for="default-lfo-freq" class="mb-1 block text-sm text-gray-400"
-								>Frequency (Hz)</label
+					<div class="grid grid-cols-2 gap-4">
+						<div class="flex flex-col items-center">
+							<span class="mb-1 text-sm text-gray-400">Frequency</span>
+							<div 
+								class="knob-container-default" 
+								role="slider"
+								aria-label="Default LFO Frequency"
+								aria-valuemin="0.05"
+								aria-valuemax="3.0"
+								aria-valuenow={defaultOscillatorSettings.lfoFreq}
+								tabindex="0"
+								on:mousedown={(e) => startDefaultKnobDrag(e, 'lfoFreq', 0.05, 3.0)}
 							>
-							<input
-								id="default-lfo-freq"
-								type="range"
-								min="0.05"
-								max="3.0"
-								step="0.05"
-								value={defaultOscillatorSettings.lfoFreq}
-								on:input={(e) => updateDefaultSetting('lfoFreq', parseFloat(e.currentTarget.value))}
-								class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-							/>
-							<span class="text-sm text-gray-500"
-								>{defaultOscillatorSettings.lfoFreq.toFixed(2)} Hz</span
-							>
+								<svg class="knob" viewBox="0 0 100 100">
+									<circle cx="50" cy="50" r="40" class="knob-track" />
+									<path
+										d={getKnobArc(defaultOscillatorSettings.lfoFreq, 0.05, 3.0)}
+										class="knob-fill"
+									/>
+									<line
+										x1="50"
+										y1="50"
+										x2={50 + 35 * Math.cos(getKnobAngle(defaultOscillatorSettings.lfoFreq, 0.05, 3.0))}
+										y2={50 + 35 * Math.sin(getKnobAngle(defaultOscillatorSettings.lfoFreq, 0.05, 3.0))}
+										class="knob-pointer"
+									/>
+								</svg>
+							</div>
+							<span class="text-sm text-gray-500">{defaultOscillatorSettings.lfoFreq.toFixed(2)} Hz</span>
 						</div>
-						<div>
-							<label for="default-lfo-wave" class="mb-1 block text-sm text-gray-400">Waveform</label
+						<div class="flex flex-col items-center">
+							<span class="mb-1 text-sm text-gray-400">Depth</span>
+							<div 
+								class="knob-container-default" 
+								role="slider"
+								aria-label="Default LFO Depth"
+								aria-valuemin="0"
+								aria-valuemax="50"
+								aria-valuenow={defaultOscillatorSettings.lfoGain}
+								tabindex="0"
+								on:mousedown={(e) => startDefaultKnobDrag(e, 'lfoGain', 0, 50)}
 							>
+								<svg class="knob" viewBox="0 0 100 100">
+									<circle cx="50" cy="50" r="40" class="knob-track" />
+									<path
+										d={getKnobArc(defaultOscillatorSettings.lfoGain, 0, 50)}
+										class="knob-fill"
+									/>
+									<line
+										x1="50"
+										y1="50"
+										x2={50 + 35 * Math.cos(getKnobAngle(defaultOscillatorSettings.lfoGain, 0, 50))}
+										y2={50 + 35 * Math.sin(getKnobAngle(defaultOscillatorSettings.lfoGain, 0, 50))}
+										class="knob-pointer"
+									/>
+								</svg>
+							</div>
+							<span class="text-sm text-gray-500">{defaultOscillatorSettings.lfoGain.toFixed(0)}</span>
+						</div>
+						<div class="flex flex-col items-center">
+							<label for="default-lfo-wave" class="mb-1 text-sm text-gray-400">Waveform</label>
 							<select
 								id="default-lfo-wave"
 								value={defaultOscillatorSettings.lfoWave}
@@ -1021,38 +1252,34 @@
 								{/each}
 							</select>
 						</div>
-						<div>
-							<label for="default-lfo-gain" class="mb-1 block text-sm text-gray-400"
-								>Depth (Amount)</label
+						<div class="flex flex-col items-center">
+							<span class="mb-1 text-sm text-gray-400">Decay</span>
+							<div 
+								class="knob-container-default" 
+								role="slider"
+								aria-label="Default LFO Decay"
+								aria-valuemin="0.1"
+								aria-valuemax="2.0"
+								aria-valuenow={defaultOscillatorSettings.lfoDecay}
+								tabindex="0"
+								on:mousedown={(e) => startDefaultKnobDrag(e, 'lfoDecay', 0.1, 2.0)}
 							>
-							<input
-								id="default-lfo-gain"
-								type="range"
-								min="0"
-								max="50"
-								step="5"
-								value={defaultOscillatorSettings.lfoGain}
-								on:input={(e) => updateDefaultSetting('lfoGain', parseFloat(e.currentTarget.value))}
-								class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-							/>
-							<span class="text-sm text-gray-500">{defaultOscillatorSettings.lfoGain}</span>
-						</div>
-						<div>
-							<label for="default-lfo-decay" class="mb-1 block text-sm text-gray-400">Decay (s)</label
-							>
-							<input
-								id="default-lfo-decay"
-								type="range"
-								min="0.1"
-								max="2.0"
-								step="0.1"
-								value={defaultOscillatorSettings.lfoDecay}
-								on:input={(e) => updateDefaultSetting('lfoDecay', parseFloat(e.currentTarget.value))}
-								class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-							/>
-							<span class="text-sm text-gray-500"
-								>{defaultOscillatorSettings.lfoDecay.toFixed(1)}s</span
-							>
+								<svg class="knob" viewBox="0 0 100 100">
+									<circle cx="50" cy="50" r="40" class="knob-track" />
+									<path
+										d={getKnobArc(defaultOscillatorSettings.lfoDecay, 0.1, 2.0)}
+										class="knob-fill"
+									/>
+									<line
+										x1="50"
+										y1="50"
+										x2={50 + 35 * Math.cos(getKnobAngle(defaultOscillatorSettings.lfoDecay, 0.1, 2.0))}
+										y2={50 + 35 * Math.sin(getKnobAngle(defaultOscillatorSettings.lfoDecay, 0.1, 2.0))}
+										class="knob-pointer"
+									/>
+								</svg>
+							</div>
+							<span class="text-sm text-gray-500">{defaultOscillatorSettings.lfoDecay.toFixed(1)}s</span>
 						</div>
 					</div>
 				</div>
@@ -1081,181 +1308,333 @@
 	</div>
 
 	{#if activeSquares.some(Boolean)}
-		<div class="mx-auto mt-8 max-w-6xl rounded-xl border border-gray-700 bg-gray-800 p-6">
-			<h3 class="mb-4 text-center text-2xl font-bold text-white">Per-Square Controls</h3>
+		<div class="mx-auto mt-8 max-w-6xl rounded-xl border border-gray-700 bg-gray-800 p-4">
+			<h3 class="mb-3 text-center text-lg font-bold text-white">Per-Square Controls</h3>
 
 			<div
-				class="grid max-h-96 grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+				class="control-grid grid gap-3"
 			>
 				{#each activeSquares as isActive, index}
 					{#if isActive}
-						<div class="min-w-64 rounded-lg border border-gray-600 bg-gray-700 p-4">
-							<h4 class="mb-3 text-center text-lg font-semibold text-blue-400">
-								Square {index + 1}
-							</h4>
+						<div 
+							class="control-module rounded-lg border border-gray-600 bg-gray-700 transition-all duration-300"
+							class:expanded={expandedControls[index]}
+						>
+							<!-- Header with toggle button -->
+							<div class="mb-2 flex items-center justify-between">
+								<h4 class="flex-1 text-center text-sm font-semibold text-blue-400">
+									Sq {index + 1}
+								</h4>
+								<button
+									on:click={() => toggleControlExpanded(index)}
+									class="rounded px-1.5 py-0.5 text-xs transition-colors hover:bg-gray-600"
+									aria-label={expandedControls[index] ? 'Collapse' : 'Expand'}
+								>
+									{expandedControls[index] ? '▼' : '▶'}
+								</button>
+							</div>
 
-							<div class="mb-4">
-								<h5 class="mb-2 text-sm font-medium text-gray-300">Primary Oscillator</h5>
-								<div class="space-y-2">
-									<div>
-										<label class="mb-1 block text-xs text-gray-400">Frequency</label>
-										<input
-											type="range"
-											min="0.25"
-											max="2.0"
-											step="0.25"
-											value={oscillatorControls[index].primaryFreq}
-											on:input={(e) =>
-												updateOscillatorControl(
-													index,
-													'primaryFreq',
-													parseFloat(e.currentTarget.value)
-												)}
-											class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-										/>
+							<!-- Collapsed view: Primary controls only in square layout -->
+							{#if !expandedControls[index]}
+								<div class="grid grid-cols-2 gap-2">
+									<div class="flex flex-col items-center">
+										<span class="mb-1 text-xs text-gray-400">Freq</span>
+										<div 
+											class="knob-container-small" 
+											role="slider"
+											aria-label="Primary Frequency"
+											aria-valuemin="0.25"
+											aria-valuemax="2.0"
+											aria-valuenow={oscillatorControls[index].primaryFreq}
+											tabindex="0"
+											on:mousedown={(e) => startKnobDrag(e, index, 'primaryFreq', 0.25, 2.0)}
+										>
+											<svg class="knob" viewBox="0 0 100 100">
+												<circle cx="50" cy="50" r="40" class="knob-track" />
+												<path
+													d={getKnobArc(oscillatorControls[index].primaryFreq, 0.25, 2.0)}
+													class="knob-fill"
+												/>
+												<line
+													x1="50"
+													y1="50"
+													x2={50 + 35 * Math.cos(getKnobAngle(oscillatorControls[index].primaryFreq, 0.25, 2.0))}
+													y2={50 + 35 * Math.sin(getKnobAngle(oscillatorControls[index].primaryFreq, 0.25, 2.0))}
+													class="knob-pointer"
+												/>
+											</svg>
+										</div>
 										<span class="text-xs text-gray-500"
-											>{oscillatorControls[index].primaryFreq.toFixed(2)}x</span
+											>{oscillatorControls[index].primaryFreq.toFixed(2)}</span
 										>
 									</div>
-									<div>
-										<label class="mb-1 block text-xs text-gray-400">Waveform</label>
-										<select
-											value={oscillatorControls[index].primaryWave}
-											on:change={(e) =>
-												updateOscillatorControl(index, 'primaryWave', e.currentTarget.value as OscillatorType)}
-											class="w-full rounded border border-gray-500 bg-gray-600 px-2 py-1 text-xs text-white"
+									<div class="flex flex-col items-center">
+										<span class="mb-1 text-xs text-gray-400">Gain</span>
+										<div 
+											class="knob-container-small" 
+											role="slider"
+											aria-label="Primary Gain"
+											aria-valuemin="0.1"
+											aria-valuemax="1.5"
+											aria-valuenow={oscillatorControls[index].primaryGain}
+											tabindex="0"
+											on:mousedown={(e) => startKnobDrag(e, index, 'primaryGain', 0.1, 1.5)}
 										>
-											{#each waveTypes as waveType}
-												<option value={waveType}>{waveType}</option>
-											{/each}
-										</select>
-									</div>
-									<div>
-										<label class="mb-1 block text-xs text-gray-400">Gain</label>
-										<input
-											type="range"
-											min="0.1"
-											max="1.5"
-											step="0.1"
-											value={oscillatorControls[index].primaryGain}
-											on:input={(e) =>
-												updateOscillatorControl(
-													index,
-													'primaryGain',
-													parseFloat(e.currentTarget.value)
-												)}
-											class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-										/>
+											<svg class="knob" viewBox="0 0 100 100">
+												<circle cx="50" cy="50" r="40" class="knob-track" />
+												<path
+													d={getKnobArc(oscillatorControls[index].primaryGain, 0.1, 1.5)}
+													class="knob-fill"
+												/>
+												<line
+													x1="50"
+													y1="50"
+													x2={50 + 35 * Math.cos(getKnobAngle(oscillatorControls[index].primaryGain, 0.1, 1.5))}
+													y2={50 + 35 * Math.sin(getKnobAngle(oscillatorControls[index].primaryGain, 0.1, 1.5))}
+													class="knob-pointer"
+												/>
+											</svg>
+										</div>
 										<span class="text-xs text-gray-500"
 											>{oscillatorControls[index].primaryGain.toFixed(1)}</span
 										>
 									</div>
-									<div>
-										<label class="mb-1 block text-xs text-gray-400">Decay (s)</label>
-										<input
-											type="range"
-											min="0.1"
-											max="2.0"
-											step="0.1"
-											value={oscillatorControls[index].primaryDecay}
-											on:input={(e) =>
-												updateOscillatorControl(
-													index,
-													'primaryDecay',
-													parseFloat(e.currentTarget.value)
-												)}
-											class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-										/>
-										<span class="text-xs text-gray-500"
-											>{oscillatorControls[index].primaryDecay.toFixed(1)}s</span
-										>
+								</div>
+							{/if}
+
+							<!-- Expanded view: All controls -->
+							{#if expandedControls[index]}
+								<div class="mb-3">
+									<h5 class="mb-2 text-center text-xs font-medium text-gray-300">Primary</h5>
+									<div class="grid grid-cols-2 gap-2">
+										<div class="flex flex-col items-center">
+											<span class="mb-1 text-xs text-gray-400">Freq</span>
+											<div 
+												class="knob-container" 
+												role="slider"
+												aria-label="Primary Frequency"
+												aria-valuemin="0.25"
+												aria-valuemax="2.0"
+												aria-valuenow={oscillatorControls[index].primaryFreq}
+												tabindex="0"
+												on:mousedown={(e) => startKnobDrag(e, index, 'primaryFreq', 0.25, 2.0)}
+											>
+												<svg class="knob" viewBox="0 0 100 100">
+													<circle cx="50" cy="50" r="40" class="knob-track" />
+													<path
+														d={getKnobArc(oscillatorControls[index].primaryFreq, 0.25, 2.0)}
+														class="knob-fill"
+													/>
+													<line
+														x1="50"
+														y1="50"
+														x2={50 + 35 * Math.cos(getKnobAngle(oscillatorControls[index].primaryFreq, 0.25, 2.0))}
+														y2={50 + 35 * Math.sin(getKnobAngle(oscillatorControls[index].primaryFreq, 0.25, 2.0))}
+														class="knob-pointer"
+													/>
+												</svg>
+											</div>
+											<span class="text-xs text-gray-500"
+												>{oscillatorControls[index].primaryFreq.toFixed(2)}</span
+											>
+										</div>
+										<div class="flex flex-col items-center">
+											<span class="mb-1 text-xs text-gray-400">Gain</span>
+											<div 
+												class="knob-container" 
+												role="slider"
+												aria-label="Primary Gain"
+												aria-valuemin="0.1"
+												aria-valuemax="1.5"
+												aria-valuenow={oscillatorControls[index].primaryGain}
+												tabindex="0"
+												on:mousedown={(e) => startKnobDrag(e, index, 'primaryGain', 0.1, 1.5)}
+											>
+												<svg class="knob" viewBox="0 0 100 100">
+													<circle cx="50" cy="50" r="40" class="knob-track" />
+													<path
+														d={getKnobArc(oscillatorControls[index].primaryGain, 0.1, 1.5)}
+														class="knob-fill"
+													/>
+													<line
+														x1="50"
+														y1="50"
+														x2={50 + 35 * Math.cos(getKnobAngle(oscillatorControls[index].primaryGain, 0.1, 1.5))}
+														y2={50 + 35 * Math.sin(getKnobAngle(oscillatorControls[index].primaryGain, 0.1, 1.5))}
+														class="knob-pointer"
+													/>
+												</svg>
+											</div>
+											<span class="text-xs text-gray-500"
+												>{oscillatorControls[index].primaryGain.toFixed(1)}</span
+											>
+										</div>
+										<div class="flex flex-col items-center">
+											<label for="primary-wave-{index}" class="mb-1 text-xs text-gray-400">Wave</label>
+											<select
+												id="primary-wave-{index}"
+												value={oscillatorControls[index].primaryWave}
+												on:change={(e) =>
+													updateOscillatorControl(index, 'primaryWave', e.currentTarget.value as OscillatorType)}
+												class="w-full rounded border border-gray-500 bg-gray-600 px-1 py-0.5 text-xs text-white"
+											>
+												{#each waveTypes as waveType}
+													<option value={waveType}>{waveType.substring(0, 3)}</option>
+												{/each}
+											</select>
+										</div>
+										<div class="flex flex-col items-center">
+											<span class="mb-1 text-xs text-gray-400">Decay</span>
+											<div 
+												class="knob-container" 
+												role="slider"
+												aria-label="Primary Decay"
+												aria-valuemin="0.1"
+												aria-valuemax="2.0"
+												aria-valuenow={oscillatorControls[index].primaryDecay}
+												tabindex="0"
+												on:mousedown={(e) => startKnobDrag(e, index, 'primaryDecay', 0.1, 2.0)}
+											>
+												<svg class="knob" viewBox="0 0 100 100">
+													<circle cx="50" cy="50" r="40" class="knob-track" />
+													<path
+														d={getKnobArc(oscillatorControls[index].primaryDecay, 0.1, 2.0)}
+														class="knob-fill"
+													/>
+													<line
+														x1="50"
+														y1="50"
+														x2={50 + 35 * Math.cos(getKnobAngle(oscillatorControls[index].primaryDecay, 0.1, 2.0))}
+														y2={50 + 35 * Math.sin(getKnobAngle(oscillatorControls[index].primaryDecay, 0.1, 2.0))}
+														class="knob-pointer"
+													/>
+												</svg>
+											</div>
+											<span class="text-xs text-gray-500"
+												>{oscillatorControls[index].primaryDecay.toFixed(1)}</span
+											>
+										</div>
 									</div>
 								</div>
-							</div>
 
-							<div class="mb-4">
-								<h5 class="mb-2 text-sm font-medium text-gray-300">LFO</h5>
-								<div class="space-y-2">
-									<div>
-										<label class="mb-1 block text-xs text-gray-400">Frequency</label>
-										<input
-											type="range"
-											min="0.05"
-											max="3.0"
-											step="0.05"
-											value={oscillatorControls[index].lfoFreq}
-											on:input={(e) =>
-												updateOscillatorControl(
-													index,
-													'lfoFreq',
-													parseFloat(e.currentTarget.value)
-												)}
-											class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-										/>
-										<span class="text-xs text-gray-500"
-											>{oscillatorControls[index].lfoFreq.toFixed(2)} Hz</span
-										>
-									</div>
-									<div>
-										<label class="mb-1 block text-xs text-gray-400">Waveform</label>
-										<select
-											value={oscillatorControls[index].lfoWave}
-											on:change={(e) =>
-												updateOscillatorControl(index, 'lfoWave', e.currentTarget.value as OscillatorType)}
-											class="w-full rounded border border-gray-500 bg-gray-600 px-2 py-1 text-xs text-white"
-										>
-											{#each waveTypes as waveType}
-												<option value={waveType}>{waveType}</option>
-											{/each}
-										</select>
-									</div>
-									<div>
-										<label class="mb-1 block text-xs text-gray-400">Depth</label>
-										<input
-											type="range"
-											min="0"
-											max="50"
-											step="5"
-											value={oscillatorControls[index].lfoGain}
-											on:input={(e) =>
-												updateOscillatorControl(
-													index,
-													'lfoGain',
-													parseFloat(e.currentTarget.value)
-												)}
-											class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-										/>
-										<span class="text-xs text-gray-500">{oscillatorControls[index].lfoGain}</span>
-									</div>
-									<div>
-										<label class="mb-1 block text-xs text-gray-400">Decay (s)</label>
-										<input
-											type="range"
-											min="0.1"
-											max="2.0"
-											step="0.1"
-											value={oscillatorControls[index].lfoDecay}
-											on:input={(e) =>
-												updateOscillatorControl(
-													index,
-													'lfoDecay',
-													parseFloat(e.currentTarget.value)
-												)}
-											class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600"
-										/>
-										<span class="text-xs text-gray-500"
-											>{oscillatorControls[index].lfoDecay.toFixed(1)}s</span
-										>
+								<div class="mb-2">
+									<h5 class="mb-2 text-center text-xs font-medium text-gray-300">LFO</h5>
+									<div class="grid grid-cols-2 gap-2">
+										<div class="flex flex-col items-center">
+											<span class="mb-1 text-xs text-gray-400">Freq</span>
+											<div 
+												class="knob-container" 
+												role="slider"
+												aria-label="LFO Frequency"
+												aria-valuemin="0.05"
+												aria-valuemax="3.0"
+												aria-valuenow={oscillatorControls[index].lfoFreq}
+												tabindex="0"
+												on:mousedown={(e) => startKnobDrag(e, index, 'lfoFreq', 0.05, 3.0)}
+											>
+												<svg class="knob" viewBox="0 0 100 100">
+													<circle cx="50" cy="50" r="40" class="knob-track" />
+													<path
+														d={getKnobArc(oscillatorControls[index].lfoFreq, 0.05, 3.0)}
+														class="knob-fill"
+													/>
+													<line
+														x1="50"
+														y1="50"
+														x2={50 + 35 * Math.cos(getKnobAngle(oscillatorControls[index].lfoFreq, 0.05, 3.0))}
+														y2={50 + 35 * Math.sin(getKnobAngle(oscillatorControls[index].lfoFreq, 0.05, 3.0))}
+														class="knob-pointer"
+													/>
+												</svg>
+											</div>
+											<span class="text-xs text-gray-500"
+												>{oscillatorControls[index].lfoFreq.toFixed(2)}</span
+											>
+										</div>
+										<div class="flex flex-col items-center">
+											<span class="mb-1 text-xs text-gray-400">Depth</span>
+											<div 
+												class="knob-container" 
+												role="slider"
+												aria-label="LFO Depth"
+												aria-valuemin="0"
+												aria-valuemax="50"
+												aria-valuenow={oscillatorControls[index].lfoGain}
+												tabindex="0"
+												on:mousedown={(e) => startKnobDrag(e, index, 'lfoGain', 0, 50)}
+											>
+												<svg class="knob" viewBox="0 0 100 100">
+													<circle cx="50" cy="50" r="40" class="knob-track" />
+													<path
+														d={getKnobArc(oscillatorControls[index].lfoGain, 0, 50)}
+														class="knob-fill"
+													/>
+													<line
+														x1="50"
+														y1="50"
+														x2={50 + 35 * Math.cos(getKnobAngle(oscillatorControls[index].lfoGain, 0, 50))}
+														y2={50 + 35 * Math.sin(getKnobAngle(oscillatorControls[index].lfoGain, 0, 50))}
+														class="knob-pointer"
+													/>
+												</svg>
+											</div>
+											<span class="text-xs text-gray-500">{oscillatorControls[index].lfoGain.toFixed(0)}</span>
+										</div>
+										<div class="flex flex-col items-center">
+											<label for="lfo-wave-{index}" class="mb-1 text-xs text-gray-400">Wave</label>
+											<select
+												id="lfo-wave-{index}"
+												value={oscillatorControls[index].lfoWave}
+												on:change={(e) =>
+													updateOscillatorControl(index, 'lfoWave', e.currentTarget.value as OscillatorType)}
+												class="w-full rounded border border-gray-500 bg-gray-600 px-1 py-0.5 text-xs text-white"
+											>
+												{#each waveTypes as waveType}
+													<option value={waveType}>{waveType.substring(0, 3)}</option>
+												{/each}
+											</select>
+										</div>
+										<div class="flex flex-col items-center">
+											<span class="mb-1 text-xs text-gray-400">Decay</span>
+											<div 
+												class="knob-container" 
+												role="slider"
+												aria-label="LFO Decay"
+												aria-valuemin="0.1"
+												aria-valuemax="2.0"
+												aria-valuenow={oscillatorControls[index].lfoDecay}
+												tabindex="0"
+												on:mousedown={(e) => startKnobDrag(e, index, 'lfoDecay', 0.1, 2.0)}
+											>
+												<svg class="knob" viewBox="0 0 100 100">
+													<circle cx="50" cy="50" r="40" class="knob-track" />
+													<path
+														d={getKnobArc(oscillatorControls[index].lfoDecay, 0.1, 2.0)}
+														class="knob-fill"
+													/>
+													<line
+														x1="50"
+														y1="50"
+														x2={50 + 35 * Math.cos(getKnobAngle(oscillatorControls[index].lfoDecay, 0.1, 2.0))}
+														y2={50 + 35 * Math.sin(getKnobAngle(oscillatorControls[index].lfoDecay, 0.1, 2.0))}
+														class="knob-pointer"
+													/>
+												</svg>
+											</div>
+											<span class="text-xs text-gray-500"
+												>{oscillatorControls[index].lfoDecay.toFixed(1)}</span
+											>
+										</div>
 									</div>
 								</div>
-							</div>
 
-							<button
-								on:click={() => resetOscillatorControls(index)}
-								class="w-full rounded bg-red-600 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700"
-							>
-								Reset
-							</button>
+								<button
+									on:click={() => resetOscillatorControls(index)}
+									class="w-full rounded bg-red-600 px-2 py-1 text-xs text-white transition-colors hover:bg-red-700"
+								>
+									Reset
+								</button>
+							{/if}
 						</div>
 					{/if}
 				{/each}
@@ -1320,6 +1699,108 @@
 		outline: none;
 		border-color: #3b82f6;
 		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+	}
+
+	/* Knob styles */
+	.knob-container {
+		width: 48px;
+		height: 48px;
+		cursor: pointer;
+		user-select: none;
+		outline: none;
+	}
+
+	.knob-container-small {
+		width: 60px;
+		height: 60px;
+		cursor: pointer;
+		user-select: none;
+		outline: none;
+	}
+
+	.knob-container-default {
+		width: 72px;
+		height: 72px;
+		cursor: pointer;
+		user-select: none;
+		outline: none;
+	}
+
+	.knob-container:focus,
+	.knob-container-small:focus,
+	.knob-container-default:focus {
+		outline: 2px solid #3b82f6;
+		outline-offset: 2px;
+		border-radius: 50%;
+	}
+
+	.knob {
+		width: 100%;
+		height: 100%;
+	}
+
+	.knob-track {
+		fill: none;
+		stroke: #4b5563;
+		stroke-width: 8;
+	}
+
+	.knob-fill {
+		fill: rgba(59, 130, 246, 0.3);
+		stroke: #3b82f6;
+		stroke-width: 8;
+		stroke-linecap: round;
+	}
+
+	.knob-pointer {
+		stroke: #fff;
+		stroke-width: 3;
+		stroke-linecap: round;
+	}
+
+	.knob-container:hover .knob-fill,
+	.knob-container-small:hover .knob-fill,
+	.knob-container-default:hover .knob-fill {
+		fill: rgba(37, 99, 235, 0.4);
+		stroke: #2563eb;
+	}
+
+	.knob-container:hover .knob-pointer,
+	.knob-container-small:hover .knob-pointer,
+	.knob-container-default:hover .knob-pointer {
+		stroke: #fbbf24;
+	}
+
+	/* Control grid layout */
+	.control-grid {
+		grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	}
+
+	/* Control module styles */
+	.control-module {
+		padding: 0.5rem;
+		min-height: 180px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.control-module.expanded {
+		grid-column: span 1;
+		grid-row: span 2;
+		min-height: 380px;
+		padding: 0.75rem;
+	}
+
+	@media (min-width: 768px) {
+		.control-grid {
+			grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.control-grid {
+			grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+		}
 	}
 
 	/* Trigger pulse animation for sequencer */
