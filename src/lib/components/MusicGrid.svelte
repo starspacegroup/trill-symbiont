@@ -547,12 +547,12 @@
 	function resetDefaultSettings() {
 		defaultOscillatorSettings = {
 			primaryFreq: 1.0,
-			primaryWave: 'sine',
-			primaryGain: 0.7,
+			primaryWave: 'sawtooth',
+			primaryGain: 1.5,
 			primaryDecay: 0.5,
 			lfoFreq: 0.2,
 			lfoWave: 'sine',
-			lfoGain: 10,
+			lfoGain: 0,
 			lfoDecay: 0.5
 		};
 	}
