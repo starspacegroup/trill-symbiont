@@ -11,7 +11,7 @@
 	let showHelp = false;
 	let showCircleOfFifths = false; // Collapsed by default
 	let masterVolume = 1.0; // Master volume control (max by default)
-	let tempo = 120; // BPM (beats per minute) for sequencer
+	let tempo = 99; // BPM (beats per minute) for sequencer
 	let isSequencerRunning = false;
 	let currentSequenceStep = -1; // -1 means no active step
 	let sequencerTimeoutId: number | null = null; // Track the timeout for cleanup
