@@ -1,78 +1,61 @@
 # CRUSH.md - Trill Symbiont SvelteKit App
 
-## Build & Development Commands
+## Commands
 
 ```bash
-npm run dev              # Start dev server
-npm run build           # Build for production
-npm run preview         # Preview production build
-npm run check           # Type check with svelte-check
-npm run check:watch     # Type check in watch mode
-npm run lint            # Run prettier + eslint
-npm run format          # Auto-format with prettier
-npm run test:unit       # Run unit tests (vitest)
-npm run test:unit -- --run src/demo.spec.ts  # Run single test file
-npm run test:e2e        # Run e2e tests (playwright)
-npm run test            # Run all tests (unit + e2e)
-npm run deploy          # Build and deploy to Cloudflare Pages
+npm run dev                                    # Start dev server
+npm run build                                  # Build for production
+npm run check                                  # Type check (run before committing)
+npm run lint                                   # Lint with prettier + eslint (run before committing)
+npm run format                                 # Auto-format code
+npm run test:unit                              # Run unit tests (vitest)
+npm run test:unit -- --run src/demo.spec.ts   # Run single test file
+npm run test:e2e                               # Run e2e tests (playwright)
+npm run test                                   # Run all tests
+npm run deploy                                 # Deploy to Cloudflare Pages
 ```
 
-## Code Style Guidelines
+## Code Style
 
-### Formatting & Linting
-- **Tabs**: Use tabs (not spaces) - configured in `.prettierrc`
-- **Line length**: 100 characters max
-- **Quotes**: Single quotes
-- **Trailing commas**: None
-- **Prettier plugins**: svelte, tailwindcss
-- **ESLint**: Extends @eslint/js, typescript-eslint, eslint-plugin-svelte, prettier
+### Formatting
 
-### TypeScript & Types
-- **Strict mode**: Enabled (`strict: true`)
-- **Module resolution**: bundler
-- **Type checking**: Enabled for JS files (`checkJs: true`)
-- **Path aliases**: Use `$lib` for `src/lib` imports
-- Define types explicitly (e.g., `type Note = 'C' | 'C#' | ...`)
+- Tabs (not spaces), single quotes, no trailing commas, 100 char line length
+- Run `npm run format` before committing
 
-### Imports & Modules
-- Use ES modules (`"type": "module"`)
-- Import from `$lib` for library code: `import Component from '$lib/components/...'`
-- Import Svelte utilities: `import { createEventDispatcher } from 'svelte'`
-- Group imports: standard library, third-party, local
+### TypeScript
+
+- Strict mode enabled - define types explicitly
+- Use `$lib` path alias: `import Component from '$lib/components/Component.svelte'`
+- Type definitions at top of script blocks
 
 ### Svelte Components
-- Use `<script lang="ts">` for TypeScript
-- Define types at top of script block
-- Use `createEventDispatcher()` for component events
-- Emit events with `dispatch('eventName', detail)`
-- Use reactive declarations (`$:`) for computed values
-- Bind state with `bind:` directive
 
-### Naming Conventions
-- **Components**: PascalCase (e.g., `CircleOfFifths.svelte`)
-- **Variables/functions**: camelCase
-- **Constants**: UPPER_SNAKE_CASE (e.g., `CIRCLE_OF_FIFTHS`, `KEY_SIGNATURES`)
-- **Type names**: PascalCase (e.g., `type Note = ...`)
-- **Event handlers**: `handle*` prefix (e.g., `handleKeyChange`)
+- Use `<script lang="ts">` for all components
+- Event handling: `createEventDispatcher()` and `dispatch('eventName', detail)`
+- Reactive declarations: `$: computed = derived + value`
+- Props: `export let propName = defaultValue`
 
-### Error Handling
-- Use try-catch for async operations
-- Log errors to console for debugging
-- Validate user input before processing
-- Type guard with TypeScript strict mode
+### Naming
+
+- Components: PascalCase (`CircleOfFifths.svelte`)
+- Variables/functions: camelCase (`selectKey`, `hoveredKey`)
+- Constants: UPPER_SNAKE_CASE (`CIRCLE_OF_FIFTHS`, `KEY_SIGNATURES`)
+- Types: PascalCase (`type Note = ...`)
+- Event handlers: `handle*` prefix or inline arrow functions
+
+### Imports
+
+- Group: standard library, third-party, local
+- Svelte imports first: `import { createEventDispatcher } from 'svelte'`
+- Use `$lib` for internal imports
 
 ### Testing
-- **Unit tests**: Vitest with `describe` and `it` blocks
-- **E2E tests**: Playwright
-- **Test files**: `*.spec.ts` or `*.test.ts`
-- Use `expect()` assertions from vitest
 
-### Database & ORM
-- **ORM**: Drizzle ORM with LibSQL
-- **Migrations**: Use `npm run db:generate` and `npm run db:push`
-- **Studio**: `npm run db:studio` for visual DB management
+- Unit tests: Vitest with `describe` and `it` blocks
+- E2E tests: Playwright
+- Test files: `*.spec.ts` or `*.test.ts`
 
-### Deployment
-- **Adapter**: Cloudflare Pages (via `@sveltejs/adapter-cloudflare`)
-- **Build output**: Optimized for Cloudflare Workers
-- **Environment**: Use `.env.example` as template
+### Database
+
+- Drizzle ORM with LibSQL
+- Commands: `npm run db:push`, `npm run db:generate`, `npm run db:studio`
