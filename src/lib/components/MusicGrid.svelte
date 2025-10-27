@@ -97,7 +97,7 @@
 				(window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
 			audioContext = new AudioContextClass();
 			masterGain = audioContext.createGain();
-			masterGain.gain.value = 0.15 * masterVolume;
+			masterGain.gain.value = 2 * masterVolume;
 			masterGain.connect(audioContext.destination);
 			isAudioInitialized = true;
 		} catch (error) {
@@ -115,7 +115,7 @@
 		if (!audioContext || !masterGain) return null;
 
 		const squareGain = audioContext.createGain();
-		const targetGain = 0.05 * oscillatorControls[index].primaryGain;
+		const targetGain = 0.3 * oscillatorControls[index].primaryGain;
 		squareGain.gain.value = 0; // Start at 0 for attack
 
 		const primaryOsc = audioContext.createOscillator();
