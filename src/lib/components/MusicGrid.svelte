@@ -54,7 +54,7 @@
 		.map(() => ({
 			primaryFreq: 1.0,
 			primaryWave: 'sawtooth',
-			primaryGain: 1.0,
+			primaryGain: 1.5,
 			primaryDecay: 0.5,
 			lfoFreq: 0.2,
 			lfoWave: 'sine',
@@ -65,7 +65,7 @@
 	let defaultOscillatorSettings = {
 		primaryFreq: 1.0,
 		primaryWave: 'sawtooth' as OscillatorType,
-		primaryGain: 1.0,
+		primaryGain: 1.5,
 		primaryDecay: 0.5,
 		lfoFreq: 0.2,
 		lfoWave: 'sine' as OscillatorType,
@@ -85,7 +85,7 @@
 	const waveTypes: OscillatorType[] = ['sine', 'triangle', 'square', 'sawtooth'];
 
 	$: if (masterGain && audioContext) {
-		masterGain.gain.setValueAtTime(0.6 * masterVolume, audioContext.currentTime);
+		masterGain.gain.setValueAtTime(1 * masterVolume, audioContext.currentTime);
 	}
 
 	async function initAudio() {
