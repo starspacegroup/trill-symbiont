@@ -242,7 +242,7 @@
 					on:click={toggleCircleOfFifths}
 					class="hover:bg-gray-750 flex w-full items-center justify-between rounded-t-xl px-6 py-4 transition-colors"
 				>
-					<h2 class="text-2xl font-bold text-white">🎵 Rule of Fifths</h2>
+					<h2 class="text-2xl font-bold text-white">🎵 Circle of Fifths</h2>
 					<span class="text-2xl text-gray-400">{showCircleOfFifths ? '▼' : '▶'}</span>
 				</button>
 
