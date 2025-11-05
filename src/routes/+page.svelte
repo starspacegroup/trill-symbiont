@@ -55,9 +55,10 @@
 					};
 				}
 
-				setTimeout(() => {
+				// Use microtask to reset flag after state updates
+				queueMicrotask(() => {
 					isUpdatingFromRemote = false;
-				}, 0);
+				});
 			}
 		});
 

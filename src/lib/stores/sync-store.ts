@@ -6,11 +6,21 @@ export const syncedState = writable<AppState | null>(null);
 export const isConnected = writable(false);
 export const connectionError = writable<string | null>(null);
 
+// Configuration
+const INITIAL_RECONNECT_DELAY = 1000;
+const MAX_RECONNECT_DELAY = 30000;
+
+function getWebSocketUrl(): string {
+	// Use wss:// for production (https), ws:// for development (http)
+	const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+	return `${protocol}//${window.location.host}/api/sync`;
+}
+
 class SyncService {
 	private ws: WebSocket | null = null;
 	private reconnectTimeout: number | null = null;
-	private reconnectDelay = 1000;
-	private maxReconnectDelay = 30000;
+	private reconnectDelay = INITIAL_RECONNECT_DELAY;
+	private maxReconnectDelay = MAX_RECONNECT_DELAY;
 
 	connect() {
 		if (this.ws?.readyState === WebSocket.OPEN) {
@@ -18,17 +28,14 @@ class SyncService {
 		}
 
 		try {
-			// Use wss:// for production, ws:// for development
-			const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-			const wsUrl = `${protocol}//${window.location.host}/api/sync`;
-
+			const wsUrl = getWebSocketUrl();
 			this.ws = new WebSocket(wsUrl);
 
 			this.ws.onopen = () => {
 				console.log('WebSocket connected');
 				isConnected.set(true);
 				connectionError.set(null);
-				this.reconnectDelay = 1000; // Reset reconnect delay
+				this.reconnectDelay = INITIAL_RECONNECT_DELAY; // Reset reconnect delay
 			};
 
 			this.ws.onmessage = (event) => {

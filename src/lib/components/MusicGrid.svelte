@@ -115,9 +115,9 @@
 			}
 		}
 		activeSquares = [...activeSquares];
-		setTimeout(() => {
+		queueMicrotask(() => {
 			isUpdatingFromRemote = false;
-		}, 0);
+		});
 	}
 
 	// Handle synced evolution state from remote
@@ -133,9 +133,9 @@
 		if (evolutionSpeed !== syncedEvolutionState.evolutionSpeed) {
 			updateEvolutionSpeed(syncedEvolutionState.evolutionSpeed);
 		}
-		setTimeout(() => {
+		queueMicrotask(() => {
 			isUpdatingFromRemote = false;
-		}, 0);
+		});
 	}
 
 	async function initAudio() {
