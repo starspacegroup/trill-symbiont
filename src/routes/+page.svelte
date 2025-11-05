@@ -21,6 +21,10 @@
 	// Track if we're updating from remote to prevent feedback loops
 	let isUpdatingFromRemote = false;
 
+	// Music grid state for syncing
+	let syncedActiveSquares: boolean[] | null = null;
+	let syncedEvolutionState: { isEvolving: boolean; evolutionSpeed: number } | null = null;
+
 	// Connect to sync service on mount
 	onMount(() => {
 		syncService.connect();
@@ -39,6 +43,18 @@
 				tempo = state.tempo;
 				isSequencerRunning = state.isSequencerRunning;
 				currentSequenceStep = state.currentSequenceStep;
+
+				// Update music grid state
+				if (state.musicGrid) {
+					syncedActiveSquares = state.musicGrid.map((s) => s.isActive);
+				}
+				if (state.evolution) {
+					syncedEvolutionState = {
+						isEvolving: state.evolution.isEvolving,
+						evolutionSpeed: state.evolution.evolutionSpeed
+					};
+				}
+
 				setTimeout(() => {
 					isUpdatingFromRemote = false;
 				}, 0);
@@ -163,6 +179,38 @@
 	// Handle tempo change
 	function handleTempoChange() {
 		sendStateUpdate({ tempo });
+	}
+
+	// Handle music grid state changes
+	function handleGridStateChange(event: CustomEvent) {
+		const activeSquares = event.detail.activeSquares;
+		const musicGrid = activeSquares.map((isActive: boolean, index: number) => ({
+			squareIndex: index,
+			isActive,
+			isExpanded: false,
+			primaryFreq: 1.0,
+			primaryWave: 'sawtooth',
+			primaryGain: 1.5,
+			primaryDecay: 0.5,
+			lfoFreq: 0.2,
+			lfoWave: 'sine',
+			lfoGain: 0,
+			lfoDecay: 0.5
+		}));
+		sendStateUpdate({ musicGrid });
+	}
+
+	// Handle evolution state changes
+	function handleEvolutionStateChange(event: CustomEvent) {
+		const { isEvolving, evolutionSpeed } = event.detail;
+		sendStateUpdate({
+			evolution: {
+				isEvolving,
+				evolutionSpeed,
+				currentStep: 0,
+				maxSteps: 16
+			}
+		});
 	}
 </script>
 
@@ -354,6 +402,10 @@
 					{masterVolume}
 					{currentSequenceStep}
 					currentChord={selectedChord}
+					{syncedActiveSquares}
+					{syncedEvolutionState}
+					on:gridStateChange={handleGridStateChange}
+					on:evolutionStateChange={handleEvolutionStateChange}
 				/>
 			</div>
 		</div>

@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+
+	const dispatch = createEventDispatcher();
 
 	export let selectedKey = 'C';
 	export let selectedScale = 'major';
@@ -8,6 +10,10 @@
 	export let currentChord = 'I';
 	export let masterVolume = 1.0;
 	export let currentSequenceStep = -1;
+
+	// Accept synced grid state from parent
+	export let syncedActiveSquares: boolean[] | null = null;
+	export let syncedEvolutionState: { isEvolving: boolean; evolutionSpeed: number } | null = null;
 
 	const GRID_SIZE = 8;
 	const TOTAL_SQUARES = GRID_SIZE * GRID_SIZE;
@@ -36,6 +42,9 @@
 
 	// Track triggered squares for animation
 	let triggeredSquares: boolean[] = Array(TOTAL_SQUARES).fill(false);
+
+	// Track if we're updating from remote to prevent feedback loops
+	let isUpdatingFromRemote = false;
 
 	// Track which control modules are expanded
 	let expandedControls: boolean[] = Array(TOTAL_SQUARES).fill(false);
@@ -86,6 +95,47 @@
 
 	$: if (masterGain && audioContext) {
 		masterGain.gain.setValueAtTime(1 * masterVolume, audioContext.currentTime);
+	}
+
+	// Handle synced state from remote
+	$: if (syncedActiveSquares && !isUpdatingFromRemote) {
+		isUpdatingFromRemote = true;
+		// Update active squares from remote state
+		for (let i = 0; i < TOTAL_SQUARES; i++) {
+			if (activeSquares[i] !== syncedActiveSquares[i]) {
+				activeSquares[i] = syncedActiveSquares[i];
+				// Start/stop audio as needed
+				if (activeSquares[i] && !audioNodes[i]) {
+					if (isAudioInitialized) {
+						audioNodes[i] = createAmbientSound(i);
+					}
+				} else if (!activeSquares[i] && audioNodes[i]) {
+					stopAmbientSound(audioNodes[i], i);
+				}
+			}
+		}
+		activeSquares = [...activeSquares];
+		setTimeout(() => {
+			isUpdatingFromRemote = false;
+		}, 0);
+	}
+
+	// Handle synced evolution state from remote
+	$: if (syncedEvolutionState && !isUpdatingFromRemote) {
+		isUpdatingFromRemote = true;
+		if (isEvolving !== syncedEvolutionState.isEvolving) {
+			if (syncedEvolutionState.isEvolving) {
+				startEvolution();
+			} else {
+				stopEvolution();
+			}
+		}
+		if (evolutionSpeed !== syncedEvolutionState.evolutionSpeed) {
+			updateEvolutionSpeed(syncedEvolutionState.evolutionSpeed);
+		}
+		setTimeout(() => {
+			isUpdatingFromRemote = false;
+		}, 0);
 	}
 
 	async function initAudio() {
@@ -274,6 +324,11 @@
 			oscillatorControls = [...oscillatorControls];
 			audioNodes[index] = createAmbientSound(index);
 		}
+
+		// Emit state change event
+		if (!isUpdatingFromRemote) {
+			dispatch('gridStateChange', { activeSquares: [...activeSquares] });
+		}
 	}
 
 	async function handleRightMouseDown(index: number) {
@@ -336,6 +391,11 @@
 			evolvePattern();
 			currentStep = (currentStep + 1) % maxSteps;
 		}, evolutionSpeed);
+
+		// Emit state change event
+		if (!isUpdatingFromRemote) {
+			dispatch('evolutionStateChange', { isEvolving, evolutionSpeed });
+		}
 	}
 
 	function stopEvolution() {
@@ -344,6 +404,11 @@
 			evolutionInterval = null;
 		}
 		isEvolving = false;
+
+		// Emit state change event
+		if (!isUpdatingFromRemote) {
+			dispatch('evolutionStateChange', { isEvolving, evolutionSpeed });
+		}
 	}
 
 	function evolvePattern() {
@@ -442,6 +507,11 @@
 		if (isEvolving) {
 			stopEvolution();
 			startEvolution();
+		}
+
+		// Emit state change event
+		if (!isUpdatingFromRemote) {
+			dispatch('evolutionStateChange', { isEvolving, evolutionSpeed });
 		}
 	}
 
