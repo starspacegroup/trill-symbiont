@@ -17,6 +17,21 @@
 			"database_name": "trill-symbiont-prod",
 			"database_id": "10263f8f-699f-4433-96d7-eeed5c98b13c"
 		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "SYNC",
+				"class_name": "SyncDurableObject",
+				"script_name": "trill-symbiont-sveltekit-app"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_classes": ["SyncDurableObject"]
+		}
 	]
 	/**
 	 * Smart Placement
