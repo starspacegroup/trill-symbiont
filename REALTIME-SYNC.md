@@ -191,15 +191,11 @@ The Durable Object is configured in `wrangler.jsonc`:
 				"script_name": "trill-symbiont-sveltekit-app"
 			}
 		]
-	},
-	"migrations": [
-		{
-			"tag": "v1",
-			"new_classes": ["SyncDurableObject"]
-		}
-	]
+	}
 }
 ```
+
+**Note:** For Cloudflare Pages projects, Durable Object migrations are not configured in `wrangler.jsonc`. The Durable Object class is automatically deployed as part of the Pages build process via the post-build script that bundles it into `_worker.js`.
 
 ## Development Testing
 
