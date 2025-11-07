@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
 	import MusicGrid from '$lib/components/MusicGrid.svelte';
 	import CircleOfFifths from '$lib/components/CircleOfFifths.svelte';
+	import { syncService, syncedState, isConnected } from '$lib/stores/sync-store';
 
 	// State for circle of fifths
 	let selectedKey = 'C';
@@ -16,30 +18,95 @@
 	let currentSequenceStep = -1; // -1 means no active step
 	let sequencerTimeoutId: number | null = null; // Track the timeout for cleanup
 
+	// Track if we're updating from remote to prevent feedback loops
+	let isUpdatingFromRemote = false;
+
+	// Music grid state for syncing
+	let syncedActiveSquares: boolean[] | null = null;
+	let syncedEvolutionState: { isEvolving: boolean; evolutionSpeed: number } | null = null;
+
+	// Connect to sync service on mount
+	onMount(() => {
+		syncService.connect();
+
+		// Subscribe to synced state updates
+		const unsubscribe = syncedState.subscribe((state) => {
+			if (state && !isUpdatingFromRemote) {
+				isUpdatingFromRemote = true;
+				selectedKey = state.selectedKey;
+				selectedScale = state.selectedScale;
+				selectedChord = state.selectedChord;
+				isSynchronized = state.isSynchronized;
+				showHelp = state.showHelp;
+				showCircleOfFifths = state.showCircleOfFifths;
+				masterVolume = state.masterVolume;
+				tempo = state.tempo;
+				isSequencerRunning = state.isSequencerRunning;
+				currentSequenceStep = state.currentSequenceStep;
+
+				// Update music grid state
+				if (state.musicGrid) {
+					syncedActiveSquares = state.musicGrid.map((s) => s.isActive);
+				}
+				if (state.evolution) {
+					syncedEvolutionState = {
+						isEvolving: state.evolution.isEvolving,
+						evolutionSpeed: state.evolution.evolutionSpeed
+					};
+				}
+
+				// Use microtask to reset flag after state updates
+				queueMicrotask(() => {
+					isUpdatingFromRemote = false;
+				});
+			}
+		});
+
+		return () => {
+			unsubscribe();
+		};
+	});
+
+	onDestroy(() => {
+		syncService.disconnect();
+	});
+
+	// Helper function to send state updates
+	function sendStateUpdate(updates: Record<string, unknown>) {
+		if (!isUpdatingFromRemote) {
+			syncService.sendUpdate(updates);
+		}
+	}
+
 	// Handle circle of fifths events
 	function handleKeyChange(event: CustomEvent) {
 		selectedKey = event.detail.key;
 		scaleFrequencies = event.detail.frequencies;
 		console.log('Key changed to:', selectedKey, 'Frequencies:', scaleFrequencies);
+		sendStateUpdate({ selectedKey });
 	}
 
 	function handleScaleChange(event: CustomEvent) {
 		selectedScale = event.detail.scale;
 		scaleFrequencies = event.detail.frequencies;
 		console.log('Scale changed to:', selectedScale, 'Frequencies:', scaleFrequencies);
+		sendStateUpdate({ selectedScale });
 	}
 
 	function handleChordChange(event: CustomEvent) {
 		selectedChord = event.detail.chord;
 		console.log('Chord changed to:', selectedChord);
+		sendStateUpdate({ selectedChord });
 	}
 
 	function toggleHelp() {
 		showHelp = !showHelp;
+		sendStateUpdate({ showHelp });
 	}
 
 	function toggleCircleOfFifths() {
 		showCircleOfFifths = !showCircleOfFifths;
+		sendStateUpdate({ showCircleOfFifths });
 	}
 
 	// Sequencer control functions
@@ -52,6 +119,7 @@
 			}
 			// Otherwise, resume from current step
 			runSequencer();
+			sendStateUpdate({ isSequencerRunning, currentSequenceStep });
 		}
 	}
 
@@ -63,6 +131,7 @@
 			sequencerTimeoutId = null;
 		}
 		// Keep currentSequenceStep as is (don't reset to -1)
+		sendStateUpdate({ isSequencerRunning });
 	}
 
 	function togglePlayPause() {
@@ -81,6 +150,7 @@
 			sequencerTimeoutId = null;
 		}
 		currentSequenceStep = -1; // Reset to no active step
+		sendStateUpdate({ isSequencerRunning, currentSequenceStep });
 	}
 
 	// Note: Removed auto-start on interaction - user must explicitly play sequencer
@@ -97,8 +167,51 @@
 		sequencerTimeoutId = setTimeout(() => {
 			if (!isSequencerRunning) return; // Double-check we're still running
 			currentSequenceStep = (currentSequenceStep + 1) % 8;
+			sendStateUpdate({ currentSequenceStep });
 			runSequencer();
 		}, intervalMs) as unknown as number;
+	}
+
+	// Handle master volume change
+	function handleVolumeChange() {
+		sendStateUpdate({ masterVolume });
+	}
+
+	// Handle tempo change
+	function handleTempoChange() {
+		sendStateUpdate({ tempo });
+	}
+
+	// Handle music grid state changes
+	function handleGridStateChange(event: CustomEvent) {
+		const activeSquares = event.detail.activeSquares;
+		const musicGrid = activeSquares.map((isActive: boolean, index: number) => ({
+			squareIndex: index,
+			isActive,
+			isExpanded: false,
+			primaryFreq: 1.0,
+			primaryWave: 'sawtooth',
+			primaryGain: 1.5,
+			primaryDecay: 0.5,
+			lfoFreq: 0.2,
+			lfoWave: 'sine',
+			lfoGain: 0,
+			lfoDecay: 0.5
+		}));
+		sendStateUpdate({ musicGrid });
+	}
+
+	// Handle evolution state changes
+	function handleEvolutionStateChange(event: CustomEvent) {
+		const { isEvolving, evolutionSpeed } = event.detail;
+		sendStateUpdate({
+			evolution: {
+				isEvolving,
+				evolutionSpeed,
+				currentStep: 0,
+				maxSteps: 16
+			}
+		});
 	}
 </script>
 
@@ -113,6 +226,17 @@
 			<p class="text-lg text-gray-300">
 				A shared generative ambient music experience with Circle of Fifths synchronization
 			</p>
+
+			<!-- Connection status indicator -->
+			<div class="mt-2 flex items-center justify-center gap-2">
+				<div
+					class="h-3 w-3 rounded-full {$isConnected ? 'bg-green-500' : 'bg-red-500'}"
+					title={$isConnected ? 'Connected to sync server' : 'Disconnected from sync server'}
+				></div>
+				<span class="text-sm text-gray-400">
+					{$isConnected ? 'Synced with all users' : 'Not connected'}
+				</span>
+			</div>
 
 			<div class="mt-4">
 				<button
@@ -139,6 +263,7 @@
 							max="1"
 							step="0.01"
 							bind:value={masterVolume}
+							on:input={handleVolumeChange}
 							class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
 						/>
 						<span class="text-sm text-gray-400">🔊</span>
@@ -160,6 +285,7 @@
 							max="240"
 							step="1"
 							bind:value={tempo}
+							on:input={handleTempoChange}
 							class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
 						/>
 						<span class="text-sm text-gray-400">🐇</span>
@@ -189,7 +315,11 @@
 						</button>
 					</div>
 					<div class="text-center text-sm text-gray-400">
-						{isSequencerRunning ? '▶ Running' : currentSequenceStep >= 0 ? '⏸ Paused' : '⏹ Stopped'} - Step {currentSequenceStep >= 0 ? currentSequenceStep + 1 : '-'}/8
+						{isSequencerRunning
+							? '▶ Running'
+							: currentSequenceStep >= 0
+								? '⏸ Paused'
+								: '⏹ Stopped'} - Step {currentSequenceStep >= 0 ? currentSequenceStep + 1 : '-'}/8
 					</div>
 				</div>
 			</div>
@@ -273,6 +403,10 @@
 					{masterVolume}
 					{currentSequenceStep}
 					currentChord={selectedChord}
+					{syncedActiveSquares}
+					{syncedEvolutionState}
+					on:gridStateChange={handleGridStateChange}
+					on:evolutionStateChange={handleEvolutionStateChange}
 				/>
 			</div>
 		</div>
