@@ -464,42 +464,110 @@
 	.info-panel {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 0.75rem;
 		width: 100%;
 		max-width: 400px;
 	}
 
+	@media (min-width: 640px) {
+		.info-panel {
+			gap: 1rem;
+		}
+	}
+
 	.current-key h3 {
-		margin: 0 0 0.5rem 0;
+		margin: 0 0 0.4rem 0;
 		color: #fbbf24;
-		font-size: 1.25rem;
+		font-size: 1rem;
+	}
+
+	@media (min-width: 640px) {
+		.current-key h3 {
+			margin: 0 0 0.5rem 0;
+			font-size: 1.125rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.current-key h3 {
+			font-size: 1.25rem;
+		}
 	}
 
 	.key-signature {
 		color: #9ca3af;
-		font-size: 0.875rem;
+		font-size: 0.75rem;
+	}
+
+	@media (min-width: 640px) {
+		.key-signature {
+			font-size: 0.8125rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.key-signature {
+			font-size: 0.875rem;
+		}
 	}
 
 	.scale-display h4,
 	.chord-display h4 {
-		margin: 0 0 0.5rem 0;
+		margin: 0 0 0.4rem 0;
 		color: #60a5fa;
-		font-size: 1rem;
+		font-size: 0.875rem;
+	}
+
+	@media (min-width: 640px) {
+		.scale-display h4,
+		.chord-display h4 {
+			margin: 0 0 0.5rem 0;
+			font-size: 0.9375rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.scale-display h4,
+		.chord-display h4 {
+			font-size: 1rem;
+		}
 	}
 
 	.scale-notes,
 	.chord-notes {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
+		gap: 0.375rem;
+	}
+
+	@media (min-width: 640px) {
+		.scale-notes,
+		.chord-notes {
+			gap: 0.5rem;
+		}
 	}
 
 	.scale-note,
 	.chord-note {
-		padding: 0.25rem 0.5rem;
+		padding: 0.2rem 0.4rem;
 		background: #4b5563;
 		border-radius: 0.25rem;
-		font-size: 1rem;
+		font-size: 0.875rem;
+	}
+
+	@media (min-width: 640px) {
+		.scale-note,
+		.chord-note {
+			padding: 0.25rem 0.5rem;
+			font-size: 0.9375rem;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.scale-note,
+		.chord-note {
+			font-size: 1rem;
+		}
 	}
 
 	.scale-note.tonic {

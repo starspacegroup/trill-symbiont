@@ -248,42 +248,43 @@
 <div class="drum-sequencer">
 	<div class="controls">
 		<div class="controls-top">
-			<h3>Drum Sequencer</h3>
+			<h3 class="text-base sm:text-lg lg:text-xl">Drum Sequencer</h3>
 			<div class="buttons">
 				<button 
 					on:click={isPlaying ? stop : play}
 					disabled={isTiedToSitePlayback}
 					class:disabled={isTiedToSitePlayback}
+					class="text-xs sm:text-sm"
 				>
 					{isPlaying ? '⏸ Stop' : '▶ Play'}
 				</button>
 				<button 
-					class="mute-button"
+					class="mute-button text-xs sm:text-sm"
 					class:muted={masterMute}
 					on:click={toggleMasterMute}
 					title={masterMute ? 'Unmute all' : 'Mute all'}
 				>
 					{masterMute ? '🔇' : '🔊'}
 				</button>
-				<button on:click={clear}>Clear</button>
+				<button on:click={clear} class="text-xs sm:text-sm">Clear</button>
 			</div>
 		</div>
 		<div class="tempo-controls">
 			<button 
-				class="tempo-tie-button" 
+				class="tempo-tie-button text-xs sm:text-sm" 
 				class:tied={isTiedToSitePlayback}
 				on:click={togglePlaybackTie}
 				title={isTiedToSitePlayback ? 'Untie from site playback' : 'Tie to site playback'}
 			>
-				{isTiedToSitePlayback ? '🔗' : '🔓'} Playback
+				{isTiedToSitePlayback ? '🔗' : '🔓'} <span class="hidden sm:inline">Playback</span>
 			</button>
 			<button 
-				class="tempo-tie-button" 
+				class="tempo-tie-button text-xs sm:text-sm" 
 				class:tied={isTiedToSiteTempo}
 				on:click={toggleTempoTie}
 				title={isTiedToSiteTempo ? 'Untie from site tempo' : 'Tie to site tempo'}
 			>
-				{isTiedToSiteTempo ? '🔗' : '🔓'} Tempo: {effectiveTempo} BPM
+				{isTiedToSiteTempo ? '🔗' : '🔓'} <span class="hidden sm:inline">Tempo:</span> {effectiveTempo} BPM
 			</button>
 			{#if !isTiedToSiteTempo}
 				<input
@@ -301,9 +302,9 @@
 	<div class="sequence-grid">
 		{#each drums as drum, drumIndex}
 			<div class="drum-row">
-				<div class="drum-label">{drum.name}</div>
+				<div class="drum-label text-xs sm:text-sm">{drum.name}</div>
 				<button 
-					class="drum-mute-button"
+					class="drum-mute-button text-xs sm:text-sm"
 					class:muted={drumMutes[drumIndex]}
 					on:click={() => toggleDrumMute(drumIndex)}
 					title={drumMutes[drumIndex] ? `Unmute ${drum.name}` : `Mute ${drum.name}`}
@@ -312,7 +313,7 @@
 					{drumMutes[drumIndex] ? '🔇' : '🔊'}
 				</button>
 				<select 
-					class="fill-select"
+					class="fill-select text-xs sm:text-sm"
 					on:change={(e) => fillPattern(drumIndex, parseInt(e.currentTarget.value))}
 					aria-label="Fill pattern for {drum.name}"
 				>
@@ -343,12 +344,15 @@
 </div>
 
 <style>
+	/* Mobile-first base styles */
 	.drum-sequencer {
 		background: rgba(0, 0, 0, 0.7);
 		border: 2px solid #00ffff;
 		border-radius: 8px;
-		padding: 1rem;
+		padding: 0.75rem;
 		margin-bottom: 1rem;
+		max-width: 100%;
+		overflow-x: hidden;
 	}
 
 	.controls {
@@ -360,80 +364,45 @@
 
 	.controls-top {
 		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.tempo-controls {
-		display: flex;
-		align-items: center;
+		flex-direction: column;
 		gap: 0.75rem;
-	}
-
-	.tempo-tie-button {
-		flex-shrink: 0;
-		white-space: nowrap;
-	}
-
-	.tempo-tie-button.tied {
-		background: rgba(0, 255, 100, 0.3);
-		border-color: #00ff66;
-	}
-
-	.tempo-slider {
-		flex: 1;
-		height: 8px;
-		border-radius: 4px;
-		background: rgba(0, 255, 255, 0.2);
-		border: 1px solid rgba(0, 255, 255, 0.3);
-		outline: none;
-		cursor: pointer;
-	}
-
-	.tempo-slider::-webkit-slider-thumb {
-		appearance: none;
-		width: 16px;
-		height: 16px;
-		border-radius: 50%;
-		background: #00ffff;
-		cursor: pointer;
-		border: 2px solid #00ffff;
-	}
-
-	.tempo-slider::-moz-range-thumb {
-		width: 16px;
-		height: 16px;
-		border-radius: 50%;
-		background: #00ffff;
-		cursor: pointer;
-		border: 2px solid #00ffff;
+		align-items: stretch;
 	}
 
 	h3 {
 		margin: 0;
 		color: #00ffff;
-		font-size: 1.2rem;
+		font-size: 1rem;
+		text-align: center;
 	}
 
 	.buttons {
 		display: flex;
 		gap: 0.5rem;
+		flex-wrap: wrap;
 	}
 
 	button {
 		background: rgba(0, 255, 255, 0.2);
 		border: 1px solid #00ffff;
 		color: #00ffff;
-		padding: 0.5rem 1rem;
+		padding: 0.75rem 1rem;
 		border-radius: 4px;
 		cursor: pointer;
 		font-size: 0.9rem;
 		transition: all 0.2s;
+		flex: 1;
+		min-width: 0;
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	button:hover:not(:disabled) {
 		background: rgba(0, 255, 255, 0.4);
-		transform: scale(1.05);
+	}
+
+	button:active:not(:disabled) {
+		transform: scale(0.95);
 	}
 
 	button:disabled,
@@ -443,8 +412,10 @@
 	}
 
 	.mute-button {
-		padding: 0.5rem 0.75rem;
-		font-size: 1rem;
+		padding: 0.75rem;
+		font-size: 1.1rem;
+		flex: 0 0 auto;
+		min-width: 44px;
 	}
 
 	.mute-button.muted {
@@ -452,11 +423,58 @@
 		border-color: #ff6666;
 	}
 
+	.tempo-controls {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.tempo-tie-button {
+		flex-shrink: 0;
+		white-space: nowrap;
+		padding: 0.75rem 1rem;
+		width: 100%;
+	}
+
+	.tempo-tie-button.tied {
+		background: rgba(0, 255, 100, 0.3);
+		border-color: #00ff66;
+	}
+
+	.tempo-slider {
+		width: 100%;
+		height: 12px;
+		border-radius: 6px;
+		background: rgba(0, 255, 255, 0.2);
+		border: 1px solid rgba(0, 255, 255, 0.3);
+		outline: none;
+		cursor: pointer;
+	}
+
+	.tempo-slider::-webkit-slider-thumb {
+		appearance: none;
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		background: #00ffff;
+		cursor: pointer;
+		border: 2px solid #00ffff;
+	}
+
+	.tempo-slider::-moz-range-thumb {
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		background: #00ffff;
+		cursor: pointer;
+		border: 2px solid #00ffff;
+	}
+
 	.drum-mute-button {
-		width: 36px;
-		height: 32px;
+		width: 40px;
+		height: 40px;
 		padding: 0.25rem;
-		font-size: 0.9rem;
+		font-size: 1rem;
 		flex-shrink: 0;
 	}
 
@@ -469,31 +487,37 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.drum-row {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		min-width: min-content;
 	}
 
 	.drum-label {
-		width: 80px;
+		width: 50px;
 		color: #00ffff;
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 		text-align: right;
+		flex-shrink: 0;
 	}
 
 	.fill-select {
 		background: rgba(0, 255, 255, 0.2);
 		border: 1px solid #00ffff;
 		color: #00ffff;
-		padding: 0.25rem 0.5rem;
+		padding: 0.5rem 0.4rem;
 		border-radius: 4px;
-		font-size: 0.8rem;
+		font-size: 0.75rem;
 		cursor: pointer;
 		outline: none;
 		transition: all 0.2s;
+		flex-shrink: 0;
+		min-width: 50px;
 	}
 
 	.fill-select:hover {
@@ -508,24 +532,25 @@
 	.steps {
 		display: flex;
 		gap: 0.25rem;
-		flex: 1;
+		flex-shrink: 0;
 	}
 
 	.step {
-		width: 32px;
-		height: 32px;
+		width: 36px;
+		height: 36px;
 		padding: 0;
 		border-radius: 4px;
 		background: rgba(255, 255, 255, 0.1);
 		border: 1px solid rgba(0, 255, 255, 0.3);
 		transition: all 0.1s;
 		user-select: none;
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
+		flex-shrink: 0;
 	}
 
-	.step:hover {
-		background: rgba(0, 255, 255, 0.3);
-		border-color: #00ffff;
-		transform: scale(1.1);
+	.step:active {
+		transform: scale(0.9);
 	}
 
 	.step.active {
@@ -538,34 +563,93 @@
 		border-width: 2px;
 	}
 
-	@media (max-width: 768px) {
+	/* Tablet and larger screens */
+	@media (min-width: 640px) {
 		.drum-sequencer {
-			padding: 0.5rem;
+			padding: 1rem;
 		}
 
-		.drum-label {
-			width: 50px;
-			font-size: 0.8rem;
-		}
-
-		.drum-mute-button {
-			width: 30px;
-			height: 28px;
-			font-size: 0.8rem;
-		}
-
-		.fill-select {
-			font-size: 0.7rem;
-			padding: 0.2rem 0.3rem;
-		}
-
-		.step {
-			width: 24px;
-			height: 24px;
+		.controls-top {
+			flex-direction: row;
+			justify-content: space-between;
+			align-items: center;
 		}
 
 		h3 {
+			font-size: 1.2rem;
+			text-align: left;
+		}
+
+		.tempo-controls {
+			flex-direction: row;
+			align-items: center;
+			gap: 0.75rem;
+		}
+
+		.tempo-tie-button {
+			width: auto;
+		}
+
+		.tempo-slider {
+			flex: 1;
+			height: 8px;
+		}
+
+		.tempo-slider::-webkit-slider-thumb {
+			width: 18px;
+			height: 18px;
+		}
+
+		.tempo-slider::-moz-range-thumb {
+			width: 18px;
+			height: 18px;
+		}
+
+		.drum-label {
+			width: 60px;
+			font-size: 0.9rem;
+		}
+
+		.step {
+			width: 32px;
+			height: 32px;
+		}
+
+		.step:hover {
+			background: rgba(0, 255, 255, 0.3);
+			border-color: #00ffff;
+			transform: scale(1.1);
+		}
+
+		.drum-mute-button {
+			width: 36px;
+			height: 32px;
+			font-size: 0.9rem;
+		}
+
+		.fill-select {
+			font-size: 0.8rem;
+			padding: 0.25rem 0.5rem;
+		}
+
+		button {
+			padding: 0.5rem 1rem;
+		}
+
+		.mute-button {
+			padding: 0.5rem 0.75rem;
 			font-size: 1rem;
+		}
+	}
+
+	/* Desktop screens */
+	@media (min-width: 1024px) {
+		.drum-label {
+			width: 80px;
+		}
+
+		.sequence-grid {
+			overflow-x: visible;
 		}
 	}
 </style>

@@ -887,23 +887,23 @@
 	];
 </script>
 
-<div class="mx-auto max-w-4xl">
-	<div class="mb-4 rounded-xl bg-gray-800 p-6">
-		<h3 class="mb-4 text-center text-2xl font-bold text-white">
+<div class="mx-auto w-full">
+	<div class="mb-4 rounded-xl bg-gray-800 p-3 sm:p-4 lg:p-6">
+		<h3 class="mb-3 text-center text-lg font-bold text-white sm:text-xl lg:mb-4 lg:text-2xl">
 			Music Grid - Organized by Intervals
 		</h3>
-		<p class="mb-6 text-center text-gray-400">
+		<p class="mb-4 text-center text-xs text-gray-400 sm:text-sm lg:mb-6">
 			Each row represents a different musical interval. Click to activate, right-click to hold.
 		</p>
 
 		<!-- Column step indicators -->
 		<div class="mb-2 flex items-center">
-			<div class="w-32"></div>
-			<div class="grid flex-1 grid-cols-8 gap-2">
+			<div class="w-20 sm:w-24 lg:w-32"></div>
+			<div class="grid flex-1 grid-cols-8 gap-1 sm:gap-2">
 				{#each Array(8) as _, colIndex}
 					<div
-						class="text-center text-xs font-bold transition-all duration-200 {currentSequenceStep >= 0 && colIndex === currentSequenceStep
-							? 'text-yellow-300 scale-125'
+						class="text-center text-[0.625rem] font-bold transition-all duration-200 sm:text-xs {currentSequenceStep >= 0 && colIndex === currentSequenceStep
+							? 'text-yellow-300 scale-110 sm:scale-125'
 							: 'text-gray-500'}"
 					>
 						{colIndex + 1}
@@ -912,12 +912,12 @@
 			</div>
 		</div>
 
-		<div class="space-y-4">
+		<div class="space-y-2 sm:space-y-3 lg:space-y-4">
 			{#each rowLabels as row, rowIndex (rowIndex)}
 				<div>
-					<div class="mb-2 flex items-center">
-						<div class="w-32 text-sm font-semibold {row.color}">{row.name}</div>
-						<div class="grid flex-1 grid-cols-8 gap-2">
+					<div class="mb-1 flex items-center sm:mb-2">
+						<div class="w-20 text-[0.625rem] font-semibold sm:w-24 sm:text-xs lg:w-32 lg:text-sm {row.color}">{row.name}</div>
+						<div class="grid flex-1 grid-cols-8 gap-1 sm:gap-2">
 							{#each Array(8) as _, colIndex}
 								{@const index = rowIndex * 8 + colIndex}
 								{@const currentFreq = getCurrentFrequency(index)}
@@ -959,14 +959,14 @@
 	</div>
 </div>
 
-<div class="mx-auto max-w-4xl">
-	<div class="mb-6 space-y-4 text-center">
+<div class="mx-auto w-full">
+	<div class="mb-4 space-y-3 text-center sm:mb-6 sm:space-y-4">
 		<div>
 			<button
 				on:click={() => {
 					initAudio();
 				}}
-				class="mr-4 rounded-lg bg-blue-600 px-8 py-4 text-lg font-medium transition-colors hover:bg-blue-700"
+				class="mr-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium transition-colors hover:bg-blue-700 sm:mr-4 sm:px-6 sm:py-3 sm:text-base lg:px-8 lg:py-4 lg:text-lg"
 				disabled={isAudioInitialized}
 			>
 				{isAudioInitialized ? '✓ Audio Ready' : '♫ Enable Audio'}
@@ -974,18 +974,18 @@
 		</div>
 
 		{#if isSynchronized && scaleFrequencies.length > 0}
-			<div class="rounded-lg bg-gray-800 p-4">
+			<div class="rounded-lg bg-gray-800 p-3 sm:p-4">
 				<div class="mb-2 flex items-center justify-center gap-2">
-					<span class="text-xl">♫</span>
-					<span class="text-lg">Synchronized to {selectedKey} {selectedScale}</span>
+					<span class="text-base sm:text-lg lg:text-xl">♫</span>
+					<span class="text-sm sm:text-base lg:text-lg">Synchronized to {selectedKey} {selectedScale}</span>
 				</div>
 				{#if currentChord}
-					<div class="flex flex-wrap items-center justify-center gap-3">
-						<span class="text-base text-gray-400">Current Chord:</span>
-						<span class="text-lg font-bold text-yellow-400">{currentChord}</span>
-						<div class="flex gap-2">
+					<div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+						<span class="text-xs text-gray-400 sm:text-sm lg:text-base">Current Chord:</span>
+						<span class="text-sm font-bold text-yellow-400 sm:text-base lg:text-lg">{currentChord}</span>
+						<div class="flex flex-wrap justify-center gap-1 sm:gap-2">
 							{#each getCurrentChordFrequencies() as freq}
-								<span class="rounded bg-gray-700 px-2 py-1 text-sm">{freq.toFixed(1)}Hz</span>
+								<span class="rounded bg-gray-700 px-1.5 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm">{freq.toFixed(1)}Hz</span>
 							{/each}
 						</div>
 					</div>
@@ -993,12 +993,12 @@
 			</div>
 		{/if}
 
-		<div class="flex flex-wrap justify-center gap-4">
+		<div class="flex flex-wrap justify-center gap-2 sm:gap-3 lg:gap-4">
 			<button
 				on:click={isEvolving ? stopEvolution : startEvolution}
-				class="px-6 py-3 {isEvolving
+				class="px-4 py-2 {isEvolving
 					? 'bg-red-600 hover:bg-red-700'
-					: 'bg-green-600 hover:bg-green-700'} rounded-lg text-lg font-medium transition-colors"
+					: 'bg-green-600 hover:bg-green-700'} rounded-lg text-sm font-medium transition-colors sm:px-5 sm:py-2.5 sm:text-base lg:px-6 lg:py-3 lg:text-lg"
 				disabled={!isAudioInitialized}
 			>
 				{isEvolving ? '⏸ Stop Evolution' : '▶ Start Evolution'}
@@ -1006,7 +1006,7 @@
 
 			<button
 				on:click={randomizeGrid}
-				class="rounded-lg bg-purple-600 px-6 py-3 text-lg font-medium transition-colors hover:bg-purple-700"
+				class="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium transition-colors hover:bg-purple-700 sm:px-5 sm:py-2.5 sm:text-base lg:px-6 lg:py-3 lg:text-lg"
 				disabled={!isAudioInitialized}
 			>
 				🎲 Randomize
@@ -1014,14 +1014,14 @@
 
 			<button
 				on:click={clearGrid}
-				class="rounded-lg bg-gray-600 px-6 py-3 text-lg font-medium transition-colors hover:bg-gray-700"
+				class="rounded-lg bg-gray-600 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-700 sm:px-5 sm:py-2.5 sm:text-base lg:px-6 lg:py-3 lg:text-lg"
 			>
 				✖ Clear All
 			</button>
 		</div>
 
-		<div class="mt-4 flex items-center justify-center gap-4">
-			<label for="evolution-speed" class="text-base text-gray-300">Evolution Speed:</label>
+		<div class="mt-3 flex flex-col items-center justify-center gap-2 sm:mt-4 sm:flex-row sm:gap-4">
+			<label for="evolution-speed" class="text-xs text-gray-300 sm:text-sm lg:text-base">Evolution Speed:</label>
 			<input
 				id="evolution-speed"
 				type="range"
@@ -1030,30 +1030,30 @@
 				step="100"
 				value={evolutionSpeed}
 				on:input={(e) => updateEvolutionSpeed(parseInt(e.currentTarget.value))}
-				class="w-32"
+				class="w-24 sm:w-32"
 			/>
-			<span class="text-base text-gray-400">{evolutionSpeed}ms</span>
+			<span class="text-xs text-gray-400 sm:text-sm lg:text-base">{evolutionSpeed}ms</span>
 		</div>
 	</div>
 
-	<div class="mt-6 text-center text-gray-400">
-		<p class="mb-2 text-base">Click squares to activate ambient sounds</p>
-		<p class="text-sm">Right-click and hold for temporary activation</p>
+	<div class="mt-4 text-center text-gray-400 sm:mt-6">
+		<p class="mb-2 text-xs sm:text-sm lg:text-base">Click squares to activate ambient sounds</p>
+		<p class="text-[0.625rem] sm:text-xs lg:text-sm">Right-click and hold for temporary activation</p>
 	</div>
 
-	<div class="mt-4 text-center">
-		<div class="inline-flex items-center space-x-4 text-base">
+	<div class="mt-3 text-center sm:mt-4">
+		<div class="inline-flex flex-col items-center space-y-2 text-xs sm:flex-row sm:space-x-3 sm:space-y-0 sm:text-sm lg:space-x-4 lg:text-base">
 			<div class="flex items-center">
 				<div
-					class="h-4 w-4 rounded-full {isEvolving
+					class="mr-1.5 h-3 w-3 rounded-full sm:mr-2 sm:h-4 sm:w-4 {isEvolving
 						? 'animate-pulse bg-green-500'
-						: 'bg-gray-500'} mr-2"
+						: 'bg-gray-500'}"
 				></div>
 				<span>{isEvolving ? 'Evolving' : 'Static'}</span>
 			</div>
 			<div class="flex items-center">
 				<div
-					class="h-4 w-4 rounded-full {isAudioInitialized ? 'bg-blue-500' : 'bg-gray-500'} mr-2"
+					class="mr-1.5 h-3 w-3 rounded-full sm:mr-2 sm:h-4 sm:w-4 {isAudioInitialized ? 'bg-blue-500' : 'bg-gray-500'}"
 				></div>
 				<span>{isAudioInitialized ? 'Audio Active' : 'Audio Disabled'}</span>
 			</div>
@@ -1065,13 +1065,13 @@
 		</div>
 	</div>
 
-	<div class="mx-auto mt-6 max-w-4xl">
-		<div class="rounded-xl border border-gray-700 bg-gray-800 p-6">
-			<h3 class="mb-4 text-center text-2xl font-bold text-white">
+	<div class="mx-auto mt-4 w-full sm:mt-6">
+		<div class="rounded-xl border border-gray-700 bg-gray-800 p-4 sm:p-5 lg:p-6">
+			<h3 class="mb-3 text-center text-lg font-bold text-white sm:mb-4 sm:text-xl lg:text-2xl">
 				Default Settings for New Squares
 			</h3>
 
-			<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:gap-6">
 				<div class="rounded-lg bg-gray-700 p-4">
 					<h4 class="mb-3 text-xl font-semibold text-blue-400">Primary Oscillator</h4>
 					<div class="grid grid-cols-2 gap-4">

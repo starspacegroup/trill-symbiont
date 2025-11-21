@@ -7,10 +7,14 @@
 	// Props
 	let { 
 		tempo = 99,
-		scaleFrequencies = []
+		scaleFrequencies = [],
+		siteIsPlaying = false,
+		siteIsStopped = true
 	}: { 
 		tempo?: number;
 		scaleFrequencies?: number[];
+		siteIsPlaying?: boolean;
+		siteIsStopped?: boolean;
 	} = $props();
 
 	let container: HTMLDivElement;
@@ -36,7 +40,6 @@
 	let hillMesh: THREE.Mesh;
 	
 	// Controls
-	let isPlaying = $state(true);
 	let isMuted = $state(false);
 	let isFullscreen = $state(false);
 	let showLegend = $state(false);
@@ -741,64 +744,67 @@
 			cameraDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 		}
 		
-		// CRITICAL: Use smaller timestep with MORE substeps to prevent tunneling
-		// This ensures fast-moving objects don't skip through geometry
-		const fixedTimeStep = 1 / 120; // Smaller timestep (was 1/60)
-		const maxSubSteps = 20; // More substeps (was 10)
-		const scaledDeltaTime = fixedTimeStep * timeScale;
-		world.step(fixedTimeStep, scaledDeltaTime, maxSubSteps);
-		
-		// CRITICAL: Clamp velocities to prevent extreme speeds that cause tunneling
-		const maxVelocity = 40; // Reduced from 50 for safety
-		const minTerrainY = -30; // Minimum Y position (well below terrain)
-		
-		bodies.forEach(body => {
-			const speed = body.velocity.length();
-			if (speed > maxVelocity) {
-				body.velocity.scale(maxVelocity / speed, body.velocity);
-			}
+		// Only step physics simulation if site is playing (pause freezes physics)
+		if (siteIsPlaying) {
+			// CRITICAL: Use smaller timestep with MORE substeps to prevent tunneling
+			// This ensures fast-moving objects don't skip through geometry
+			const fixedTimeStep = 1 / 120; // Smaller timestep (was 1/60)
+			const maxSubSteps = 20; // More substeps (was 10)
+			const scaledDeltaTime = fixedTimeStep * timeScale;
+			world.step(fixedTimeStep, scaledDeltaTime, maxSubSteps);
 			
-			// Also clamp angular velocity
-			const angularSpeed = body.angularVelocity.length();
-			const maxAngularVelocity = 25; // Reduced from 30
-			if (angularSpeed > maxAngularVelocity) {
-				body.angularVelocity.scale(maxAngularVelocity / angularSpeed, body.angularVelocity);
-			}
+			// CRITICAL: Clamp velocities to prevent extreme speeds that cause tunneling
+			const maxVelocity = 40; // Reduced from 50 for safety
+			const minTerrainY = -30; // Minimum Y position (well below terrain)
 			
-			// CRITICAL: Fall-through detection and correction
-			// If object falls below minimum terrain level, it MUST have tunneled through
-			if (body.position.y < minTerrainY) {
-				console.warn('FALL-THROUGH DETECTED - Repositioning object');
+			bodies.forEach(body => {
+				const speed = body.velocity.length();
+				if (speed > maxVelocity) {
+					body.velocity.scale(maxVelocity / speed, body.velocity);
+				}
 				
-				// Teleport object back to safe spawn position
-				body.position.set(
-					-25 + (Math.random() - 0.5) * 3,
-					35, // Higher spawn
-					-10 + (Math.random() - 0.5) * 5
-				);
+				// Also clamp angular velocity
+				const angularSpeed = body.angularVelocity.length();
+				const maxAngularVelocity = 25; // Reduced from 30
+				if (angularSpeed > maxAngularVelocity) {
+					body.angularVelocity.scale(maxAngularVelocity / angularSpeed, body.angularVelocity);
+				}
 				
-				// Reset velocity to safe values
-				body.velocity.set(
-					8 + Math.random() * 2,
-					6 + Math.random() * 2,
-					4 + Math.random() * 2
-				);
+				// CRITICAL: Fall-through detection and correction
+				// If object falls below minimum terrain level, it MUST have tunneled through
+				if (body.position.y < minTerrainY) {
+					console.warn('FALL-THROUGH DETECTED - Repositioning object');
+					
+					// Teleport object back to safe spawn position
+					body.position.set(
+						-25 + (Math.random() - 0.5) * 3,
+						35, // Higher spawn
+						-10 + (Math.random() - 0.5) * 5
+					);
+					
+					// Reset velocity to safe values
+					body.velocity.set(
+						8 + Math.random() * 2,
+						6 + Math.random() * 2,
+						4 + Math.random() * 2
+					);
+					
+					// Reset angular velocity
+					body.angularVelocity.set(0, 0, 0);
+					
+					// Reset orientation
+					body.quaternion.set(0, 0, 0, 1);
+				}
 				
-				// Reset angular velocity
-				body.angularVelocity.set(0, 0, 0);
-				
-				// Reset orientation
-				body.quaternion.set(0, 0, 0, 1);
-			}
-			
-			// Additional safety: Check if object is falling too fast downward
-			if (body.velocity.y < -50) {
-				console.warn('EXCESSIVE DOWNWARD VELOCITY - Clamping');
-				body.velocity.y = -50;
-			}
-		});
+				// Additional safety: Check if object is falling too fast downward
+				if (body.velocity.y < -50) {
+					console.warn('EXCESSIVE DOWNWARD VELOCITY - Clamping');
+					body.velocity.y = -50;
+				}
+			});
+		}
 		
-		// Sync meshes with physics bodies
+		// Always sync meshes with physics bodies (for rendering)
 		meshes.forEach((mesh, index) => {
 			if (bodies[index]) {
 				mesh.position.copy(bodies[index].position as any);
@@ -813,7 +819,7 @@
 		if (emitterInterval) return;
 		
 		emitterInterval = setInterval(() => {
-			if (isPlaying) {
+			if (siteIsPlaying) {
 				createObject();
 			}
 		}, EMIT_INTERVAL);
@@ -826,9 +832,22 @@
 		}
 	}
 	
-	function togglePlay() {
-		isPlaying = !isPlaying;
+	function clearAllObjects() {
+		// Remove all physics bodies from world
+		bodies.forEach(body => world.removeBody(body));
+		bodies = [];
+		
+		// Remove all meshes from scene
+		meshes.forEach(mesh => scene.remove(mesh));
+		meshes = [];
 	}
+	
+	// Watch for stop state changes to clear objects
+	$effect(() => {
+		if (siteIsStopped) {
+			clearAllObjects();
+		}
+	});
 	
 	function toggleMute() {
 		isMuted = !isMuted;
@@ -894,19 +913,6 @@
 	<div bind:this={container} class="canvas-container"></div>
 	
 	<div class="controls">
-		<button onclick={togglePlay} class="control-btn" aria-label={isPlaying ? 'Pause' : 'Play'}>
-			{#if isPlaying}
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<rect x="6" y="4" width="4" height="16"></rect>
-					<rect x="14" y="4" width="4" height="16"></rect>
-				</svg>
-			{:else}
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<polygon points="5 3 19 12 5 21 5 3"></polygon>
-				</svg>
-			{/if}
-		</button>
-		
 		<button onclick={toggleMute} class="control-btn" aria-label={isMuted ? 'Unmute' : 'Mute'}>
 			{#if isMuted}
 				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1021,7 +1027,7 @@
 <!-- Speed Control Outside Viewport -->
 <div class="speed-control-external">
 	<div class="speed-header">
-		<span class="speed-title">Simulation Speed</span>
+		<span class="speed-title">Simulation Controls</span>
 		<label class="tempo-toggle">
 			<input
 				type="checkbox"
@@ -1030,6 +1036,16 @@
 			<span>Correlate with Tempo</span>
 		</label>
 	</div>
+	
+	<!-- Simulation State Display -->
+	<div class="simulation-state">
+		<span class="state-label">Simulation State:</span>
+		<span class="state-value {siteIsPlaying ? 'state-playing' : siteIsStopped ? 'state-stopped' : 'state-paused'}">
+			{siteIsPlaying ? '▶ Playing' : siteIsStopped ? '⏹ Stopped' : '⏸ Paused'}
+		</span>
+		<span class="state-note">(Synced with site sequencer)</span>
+	</div>
+	
 	<div class="speed-slider-container">
 		<input
 			id="speed-slider"
@@ -1066,11 +1082,29 @@
 	.physics-scene-container {
 		position: relative;
 		width: 100%;
-		height: 600px;
+		height: 300px;
 		border: 2px solid #00ff88;
 		border-radius: 8px;
 		overflow: hidden;
 		background: #0a0a0a;
+	}
+
+	@media (min-width: 640px) {
+		.physics-scene-container {
+			height: 400px;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.physics-scene-container {
+			height: 500px;
+		}
+	}
+
+	@media (min-width: 1280px) {
+		.physics-scene-container {
+			height: 600px;
+		}
 	}
 	
 	.canvas-container {
@@ -1087,8 +1121,8 @@
 	}
 	
 	.control-btn {
-		width: 48px;
-		height: 48px;
+		width: 36px;
+		height: 36px;
 		border-radius: 50%;
 		border: 2px solid #00ff88;
 		background: rgba(0, 255, 136, 0.1);
@@ -1099,6 +1133,20 @@
 		cursor: pointer;
 		transition: all 0.2s ease;
 		backdrop-filter: blur(10px);
+	}
+
+	@media (min-width: 640px) {
+		.control-btn {
+			width: 42px;
+			height: 42px;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.control-btn {
+			width: 48px;
+			height: 48px;
+		}
 	}
 	
 	.control-btn:hover {
@@ -1112,39 +1160,96 @@
 	}
 	
 	.control-btn svg {
-		width: 24px;
-		height: 24px;
+		width: 18px;
+		height: 18px;
+	}
+
+	@media (min-width: 640px) {
+		.control-btn svg {
+			width: 20px;
+			height: 20px;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.control-btn svg {
+			width: 24px;
+			height: 24px;
+		}
 	}
 	
 	.legend-info {
 		position: absolute;
-		top: 20px;
-		left: 20px;
+		top: 10px;
+		left: 10px;
 		background: rgba(0, 255, 136, 0.1);
 		border: 2px solid #00ff88;
 		border-radius: 8px;
-		padding: 16px;
+		padding: 8px;
 		color: #00ff88;
 		font-family: monospace;
 		backdrop-filter: blur(10px);
-		min-width: 200px;
+		min-width: 150px;
+		font-size: 10px;
+	}
+
+	@media (min-width: 640px) {
+		.legend-info {
+			top: 15px;
+			left: 15px;
+			padding: 12px;
+			min-width: 180px;
+			font-size: 11px;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.legend-info {
+			top: 20px;
+			left: 20px;
+			padding: 16px;
+			min-width: 200px;
+			font-size: 12px;
+		}
 	}
 	
 	.legend-title {
-		font-size: 14px;
+		font-size: 11px;
 		font-weight: bold;
-		margin-bottom: 12px;
+		margin-bottom: 8px;
 		text-align: center;
 		border-bottom: 1px solid #00ff88;
-		padding-bottom: 8px;
+		padding-bottom: 6px;
+	}
+
+	@media (min-width: 640px) {
+		.legend-title {
+			font-size: 12px;
+			margin-bottom: 10px;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.legend-title {
+			font-size: 14px;
+			margin-bottom: 12px;
+			padding-bottom: 8px;
+		}
 	}
 	
 	.legend-item {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-bottom: 8px;
-		font-size: 12px;
+		margin-bottom: 6px;
+		font-size: 10px;
+	}
+
+	@media (min-width: 1024px) {
+		.legend-item {
+			margin-bottom: 8px;
+			font-size: 12px;
+		}
 	}
 	
 	.axis-label {
@@ -1173,38 +1278,90 @@
 		background: rgba(0, 255, 136, 0.05);
 		border: 2px solid #00ff88;
 		border-radius: 8px;
-		padding: 16px 20px;
+		padding: 12px 16px;
 		color: #00ff88;
 		font-family: monospace;
+	}
+
+	@media (min-width: 640px) {
+		.speed-control-external {
+			padding: 14px 18px;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.speed-control-external {
+			padding: 16px 20px;
+		}
 	}
 	
 	.speed-header {
 		display: flex;
-		justify-content: space-between;
-		align-items: center;
+		flex-direction: column;
+		gap: 8px;
 		margin-bottom: 12px;
+	}
+
+	@media (min-width: 640px) {
+		.speed-header {
+			flex-direction: row;
+			justify-content: space-between;
+			align-items: center;
+		}
 	}
 	
 	.speed-title {
-		font-size: 14px;
+		font-size: 12px;
 		font-weight: bold;
 		color: #00ff88;
+	}
+
+	@media (min-width: 640px) {
+		.speed-title {
+			font-size: 13px;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.speed-title {
+			font-size: 14px;
+		}
 	}
 	
 	.tempo-toggle {
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		font-size: 12px;
+		gap: 6px;
+		font-size: 10px;
 		cursor: pointer;
 		color: rgba(0, 255, 136, 0.8);
+	}
+
+	@media (min-width: 640px) {
+		.tempo-toggle {
+			gap: 8px;
+			font-size: 11px;
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.tempo-toggle {
+			font-size: 12px;
+		}
 	}
 	
 	.tempo-toggle input[type="checkbox"] {
 		cursor: pointer;
-		width: 16px;
-		height: 16px;
+		width: 14px;
+		height: 14px;
 		accent-color: #00ff88;
+	}
+
+	@media (min-width: 1024px) {
+		.tempo-toggle input[type="checkbox"] {
+			width: 16px;
+			height: 16px;
+		}
 	}
 	
 	.speed-slider-container {
@@ -1291,6 +1448,47 @@
 		font-size: 11px;
 		color: rgba(0, 255, 136, 0.6);
 		text-align: center;
+	}
+	
+	.simulation-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		margin-bottom: 12px;
+		padding: 12px;
+		background: rgba(0, 255, 136, 0.05);
+		border-radius: 6px;
+		border: 1px solid rgba(0, 255, 136, 0.2);
+	}
+	
+	.state-label {
+		font-size: 11px;
+		color: rgba(0, 255, 136, 0.7);
+		font-weight: bold;
+	}
+	
+	.state-value {
+		font-size: 14px;
+		font-weight: bold;
+	}
+	
+	.state-playing {
+		color: #00ff88;
+	}
+	
+	.state-paused {
+		color: #ffaa00;
+	}
+	
+	.state-stopped {
+		color: #ff4444;
+	}
+	
+	.state-note {
+		font-size: 10px;
+		color: rgba(0, 255, 136, 0.5);
+		font-style: italic;
 	}
 	
 	.legend-separator {
