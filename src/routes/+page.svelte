@@ -1,6 +1,8 @@
 <script lang="ts">
 	import MusicGrid from '$lib/components/MusicGrid.svelte';
 	import CircleOfFifths from '$lib/components/CircleOfFifths.svelte';
+	import PhysicsScene from '$lib/components/PhysicsScene.svelte';
+	import DrumSequencer from '$lib/components/DrumSequencer.svelte';
 
 	// State for circle of fifths
 	let selectedKey = 'C';
@@ -234,6 +236,16 @@
 				</div>
 			</div>
 		{/if}
+
+		<!-- Drum Sequencer Section -->
+		<div class="mx-auto mb-8 max-w-4xl">
+			<DrumSequencer {tempo} siteIsPlaying={isSequencerRunning} />
+		</div>
+
+		<!-- Physics Scene Section -->
+		<div class="mx-auto mb-8 max-w-4xl">
+			<PhysicsScene {tempo} {scaleFrequencies} />
+		</div>
 
 		<!-- Circle of Fifths Section - Collapsible at top -->
 		<div class="mx-auto mb-8 max-w-4xl">

@@ -12,11 +12,21 @@
 			return false;
 		};
 
+		// Disable middle-click default behavior (autoscroll)
+		const handleMouseDown = (event: MouseEvent) => {
+			if (event.button === 1) {
+				event.preventDefault();
+				return false;
+			}
+		};
+
 		document.addEventListener('contextmenu', handleContextMenu);
+		document.addEventListener('mousedown', handleMouseDown);
 
 		// Cleanup function
 		return () => {
 			document.removeEventListener('contextmenu', handleContextMenu);
+			document.removeEventListener('mousedown', handleMouseDown);
 		};
 	});
 </script>
