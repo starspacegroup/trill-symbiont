@@ -1,60 +1,69 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { sha256 } from '@oslojs/crypto/sha2';
 import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
+import { eq } from 'drizzle-orm';
+import { getDb } from './db';
+import { sessions, users } from './db/schema';
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
-// In-memory storage for sessions and users
-export const sessions: Record<string, { id: string; userId: string; expiresAt: Date }> = {};
-export const users: Record<string, { id: string; username: string; passwordHash: string }> = {};
-
-export type User = {
-	id: string;
-	username: string;
-	passwordHash: string;
-};
+export type User = typeof users.$inferSelect;
+export type Session = typeof sessions.$inferSelect;
 
 export const sessionCookieName = 'auth-session';
 
 export function generateSessionToken() {
 	const bytes = crypto.getRandomValues(new Uint8Array(18));
-	const token = encodeBase64url(bytes);
-	return token;
+	return encodeBase64url(bytes);
 }
 
-export async function createSession(token: string, userId: string) {
-	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	sessions[sessionId] = {
+export function hashToken(token: string): string {
+	return encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+}
+
+export async function createSession(d1: D1Database, token: string, userId: string) {
+	const db = getDb(d1);
+	const sessionId = hashToken(token);
+	const expiresAt = new Date(Date.now() + DAY_IN_MS * 30);
+
+	await db.insert(sessions).values({
 		id: sessionId,
 		userId,
-		expiresAt: new Date(Date.now() + DAY_IN_MS * 30)
-	};
-	return sessions[sessionId];
+		expiresAt
+	});
+
+	return { id: sessionId, userId, expiresAt };
 }
 
-export async function validateSessionToken(token: string) {
-	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	const session = sessions[sessionId];
+export async function validateSessionToken(d1: D1Database, token: string) {
+	const db = getDb(d1);
+	const sessionId = hashToken(token);
 
-	if (!session) {
+	const result = await db
+		.select()
+		.from(sessions)
+		.innerJoin(users, eq(sessions.userId, users.id))
+		.where(eq(sessions.id, sessionId))
+		.limit(1);
+
+	if (result.length === 0) {
 		return { session: null, user: null };
 	}
 
+	const session = result[0].sessions;
+	const user = result[0].users;
+
 	const sessionExpired = Date.now() >= session.expiresAt.getTime();
 	if (sessionExpired) {
-		delete sessions[sessionId];
+		await db.delete(sessions).where(eq(sessions.id, sessionId));
 		return { session: null, user: null };
 	}
 
 	const renewSession = Date.now() >= session.expiresAt.getTime() - DAY_IN_MS * 15;
 	if (renewSession) {
-		session.expiresAt = new Date(Date.now() + DAY_IN_MS * 30);
-	}
-
-	const user = users[session.userId];
-	if (!user) {
-		delete sessions[sessionId];
-		return { session: null, user: null };
+		const newExpiry = new Date(Date.now() + DAY_IN_MS * 30);
+		await db.update(sessions).set({ expiresAt: newExpiry }).where(eq(sessions.id, sessionId));
+		session.expiresAt = newExpiry;
 	}
 
 	return { session, user };
@@ -62,14 +71,46 @@ export async function validateSessionToken(token: string) {
 
 export type SessionValidationResult = Awaited<ReturnType<typeof validateSessionToken>>;
 
-export async function invalidateSession(sessionId: string) {
-	delete sessions[sessionId];
+export async function invalidateSession(d1: D1Database, sessionId: string) {
+	const db = getDb(d1);
+	await db.delete(sessions).where(eq(sessions.id, sessionId));
+}
+
+export async function upsertUser(
+	d1: D1Database,
+	discordUser: { id: string; username: string; global_name: string | null; avatar: string | null; }
+) {
+	const db = getDb(d1);
+	const now = new Date();
+
+	await db
+		.insert(users)
+		.values({
+			id: discordUser.id,
+			username: discordUser.username,
+			globalName: discordUser.global_name,
+			avatar: discordUser.avatar,
+			createdAt: now,
+			updatedAt: now
+		})
+		.onConflictDoUpdate({
+			target: users.id,
+			set: {
+				username: discordUser.username,
+				globalName: discordUser.global_name,
+				avatar: discordUser.avatar,
+				updatedAt: now
+			}
+		});
 }
 
 export function setSessionTokenCookie(event: RequestEvent, token: string, expiresAt: Date) {
 	event.cookies.set(sessionCookieName, token, {
 		expires: expiresAt,
-		path: '/'
+		path: '/',
+		httpOnly: true,
+		secure: true,
+		sameSite: 'lax'
 	});
 }
 
@@ -78,10 +119,3 @@ export function deleteSessionTokenCookie(event: RequestEvent) {
 		path: '/'
 	});
 }
-
-// Demo user initialization
-users['1'] = {
-	id: '1',
-	username: 'demo',
-	passwordHash: 'demo-hash'
-};

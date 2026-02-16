@@ -3,19 +3,24 @@
 declare global {
 	namespace App {
 		interface Platform {
-			env: Env;
+			env: Env & {
+				DB: D1Database;
+				DISCORD_CLIENT_ID: string;
+				DISCORD_CLIENT_SECRET: string;
+			};
 			cf: CfProperties;
 			ctx: ExecutionContext;
 		}
 
 		interface Locals {
-			user: import('$lib/server/auth').SessionValidationResult['user'];
-			session: import('$lib/server/auth').SessionValidationResult['session'];
+			user: import('$lib/server/auth').User | null;
+			session: import('$lib/server/auth').Session | null;
 		}
-	} // interface Error {}
-	// interface Locals {}
-} // interface PageData {}
-// interface PageState {}
 
-// interface Platform {}
-export {};
+		// interface Error {}
+		// interface PageData {}
+		// interface PageState {}
+	}
+}
+
+export { };

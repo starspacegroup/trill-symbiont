@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import AuthHeader from '$lib/components/AuthHeader.svelte';
 	import { onMount } from 'svelte';
 
 	let { children } = $props();
@@ -34,5 +35,9 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
+
+<div class="fixed top-0 right-0 z-50 p-2">
+	<AuthHeader />
+</div>
 
 {@render children?.()}
