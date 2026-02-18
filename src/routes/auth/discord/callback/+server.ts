@@ -31,22 +31,44 @@ export const GET: RequestHandler = async ({ url, cookies, platform }) => {
     const redirectUri = `${url.origin}/auth/discord/callback`;
 
     // Exchange code for access token
-    const tokenData = await exchangeCodeForToken(clientId, clientSecret, code, redirectUri);
+    let tokenData;
+    try {
+      tokenData = await exchangeCodeForToken(clientId, clientSecret, code, redirectUri);
+    } catch (e) {
+      console.error('Token exchange failed:', e);
+      return new Response(`Authentication failed: token exchange error`, { status: 500 });
+    }
 
     // Fetch Discord user info
-    const discordUser = await getDiscordUser(tokenData.access_token);
+    let discordUser;
+    try {
+      discordUser = await getDiscordUser(tokenData.access_token);
+    } catch (e) {
+      console.error('Discord user fetch failed:', e);
+      return new Response(`Authentication failed: user fetch error`, { status: 500 });
+    }
 
     // Upsert user in database
-    await auth.upsertUser(d1, discordUser);
+    try {
+      await auth.upsertUser(d1, discordUser);
+    } catch (e) {
+      console.error('User upsert failed:', e);
+      return new Response(`Authentication failed: database user error`, { status: 500 });
+    }
 
     // Create auth session
-    const sessionToken = auth.generateSessionToken();
-    const session = await auth.createSession(d1, sessionToken, discordUser.id);
-    auth.setSessionTokenCookie(
-      { cookies } as Parameters<typeof auth.setSessionTokenCookie>[0],
-      sessionToken,
-      session.expiresAt
-    );
+    try {
+      const sessionToken = auth.generateSessionToken();
+      const session = await auth.createSession(d1, sessionToken, discordUser.id);
+      auth.setSessionTokenCookie(
+        { cookies } as Parameters<typeof auth.setSessionTokenCookie>[0],
+        sessionToken,
+        session.expiresAt
+      );
+    } catch (e) {
+      console.error('Session creation failed:', e);
+      return new Response(`Authentication failed: session creation error`, { status: 500 });
+    }
   } catch (error) {
     console.error('Discord OAuth error:', error);
     return new Response('Authentication failed', { status: 500 });
