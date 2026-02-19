@@ -30,5 +30,21 @@ export const sharedSessions = sqliteTable('shared_sessions', {
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .$defaultFn(() => new Date()),
-  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true)
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  state: text('state').notNull().default('{}'),
+  stateVersion: integer('state_version').notNull().default(0)
+});
+
+export const sessionPresence = sqliteTable('session_presence', {
+  sessionId: text('session_id')
+    .notNull()
+    .references(() => sharedSessions.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
+  username: text('username').notNull(),
+  avatar: text('avatar'),
+  lastSeen: integer('last_seen', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date())
 });

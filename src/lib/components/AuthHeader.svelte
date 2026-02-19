@@ -1,93 +1,11 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 
-	type SharedSession = {
-		id: string;
-		name: string;
-		creatorId: string;
-		isActive: boolean;
-	};
-
-	let showSessionPanel = $state(false);
-	let sessions = $state<SharedSession[]>([]);
-	let newSessionName = $state('');
-	let isCreating = $state(false);
-	let copiedId = $state<string | null>(null);
-
 	const user = $derived(page.data.user as { id: string; username: string; globalName: string | null; avatarUrl: string } | null);
-
-	async function loadSessions() {
-		try {
-			const res = await fetch('/api/sessions');
-			const data = (await res.json()) as { sessions?: SharedSession[] };
-			sessions = data.sessions ?? [];
-		} catch {
-			sessions = [];
-		}
-	}
-
-	async function createSession() {
-		if (isCreating) return;
-		isCreating = true;
-		try {
-			const res = await fetch('/api/sessions', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name: newSessionName || undefined })
-			});
-			const data = (await res.json()) as { session?: SharedSession };
-			if (data.session) {
-				sessions = [data.session, ...sessions];
-				newSessionName = '';
-				showSessionPanel = false;
-				goto(`/?session=${data.session.id}`);
-			}
-		} finally {
-			isCreating = false;
-		}
-	}
-
-	async function deleteSession(id: string) {
-		try {
-			await fetch('/api/sessions', {
-				method: 'DELETE',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ id })
-			});
-			sessions = sessions.filter((s) => s.id !== id);
-		} catch {
-			// ignore
-		}
-	}
-
-	function copyLink(sessionId: string) {
-		const link = `${window.location.origin}/?session=${sessionId}`;
-		navigator.clipboard.writeText(link);
-		copiedId = sessionId;
-		setTimeout(() => {
-			copiedId = null;
-		}, 2000);
-	}
-
-	function toggleSessionPanel() {
-		showSessionPanel = !showSessionPanel;
-		if (showSessionPanel) {
-			loadSessions();
-		}
-	}
 </script>
 
 <div class="relative z-50 flex items-center gap-3">
 	{#if user}
-		<!-- Logged in -->
-		<button
-			onclick={toggleSessionPanel}
-			class="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-700"
-		>
-			+ Session
-		</button>
-
 		<div class="flex items-center gap-2">
 			<img
 				src={user.avatarUrl}
@@ -107,69 +25,7 @@
 				Logout
 			</button>
 		</form>
-
-		<!-- Session Panel Dropdown -->
-		{#if showSessionPanel}
-			<div
-				class="absolute top-full right-0 mt-2 w-80 rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-xl"
-			>
-				<h3 class="mb-3 text-sm font-semibold text-white">Shared Sessions</h3>
-
-				<!-- Create new session -->
-				<div class="mb-3 flex gap-2">
-					<input
-						type="text"
-						bind:value={newSessionName}
-						placeholder="Session name..."
-						class="flex-1 rounded-md border border-gray-600 bg-gray-700 px-3 py-1.5 text-sm text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none"
-						onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && createSession()}
-					/>
-					<button
-						onclick={createSession}
-						disabled={isCreating}
-						class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
-					>
-						{isCreating ? '...' : 'Create'}
-					</button>
-				</div>
-
-				<!-- Session list -->
-				{#if sessions.length === 0}
-					<p class="text-center text-xs text-gray-400">No sessions yet</p>
-				{:else}
-					<div class="flex max-h-60 flex-col gap-2 overflow-y-auto">
-						{#each sessions as session (session.id)}
-							<div
-								class="flex items-center justify-between rounded-md bg-gray-700/50 p-2 text-sm"
-							>
-								<div class="min-w-0 flex-1">
-									<div class="truncate font-medium text-gray-200">{session.name}</div>
-									<div class="font-mono text-xs text-gray-400">{session.id}</div>
-								</div>
-								<div class="flex gap-1">
-									<button
-										onclick={() => copyLink(session.id)}
-										class="rounded px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-gray-600"
-										title="Copy shareable link"
-									>
-										{copiedId === session.id ? '✓' : '📋'}
-									</button>
-									<button
-										onclick={() => deleteSession(session.id)}
-										class="rounded px-2 py-1 text-xs text-red-400 transition-colors hover:bg-gray-600"
-										title="Delete session"
-									>
-										✕
-									</button>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
-		{/if}
 	{:else}
-		<!-- Not logged in -->
 		<a
 			href="/auth/discord"
 			class="flex items-center gap-2 rounded-md bg-[#5865F2] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#4752C4]"

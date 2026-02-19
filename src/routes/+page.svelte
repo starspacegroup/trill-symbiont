@@ -6,6 +6,7 @@
 	import DraggableWidget from '$lib/components/DraggableWidget.svelte';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import { sessionSync } from '$lib/stores/sessionSync.svelte';
 
 	// State for circle of fifths
 	let selectedKey = 'C';
@@ -19,6 +20,36 @@
 	let isSequencerRunning = false;
 	let currentSequenceStep = -1; // -1 means no active step
 	let sequencerTimeoutId: number | null = null; // Track the timeout for cleanup
+
+	// ---- Session sync: apply remote state to local controls ----
+	// We use a polling check inside onMount (below) instead of $effect
+	// to stay compatible with Svelte 4 reactive statements ($:) in this file.
+	let _lastAppliedVersion = 0;
+
+	function applyRemoteSessionState() {
+		if (!sessionSync.connected) return;
+		const remote = sessionSync.sharedState;
+		const ver = sessionSync.stateVersion;
+		if (ver <= _lastAppliedVersion) return;
+		_lastAppliedVersion = ver;
+
+		if (remote.selectedKey !== undefined && remote.selectedKey !== selectedKey) selectedKey = remote.selectedKey;
+		if (remote.selectedScale !== undefined && remote.selectedScale !== selectedScale) selectedScale = remote.selectedScale;
+		if (remote.selectedChord !== undefined && remote.selectedChord !== selectedChord) selectedChord = remote.selectedChord;
+		if (remote.masterVolume !== undefined && remote.masterVolume !== masterVolume) masterVolume = remote.masterVolume;
+		if (remote.tempo !== undefined && remote.tempo !== tempo) tempo = remote.tempo;
+		if (remote.isSequencerRunning !== undefined && remote.isSequencerRunning !== isSequencerRunning) {
+			if (remote.isSequencerRunning) playSequencer();
+			else pauseSequencer();
+		}
+	}
+
+	// Push local control changes to session (called by control handlers)
+	function syncToSession(partial: Record<string, unknown>) {
+		if (sessionSync.connected) {
+			sessionSync.updateState(partial);
+		}
+	}
 
 	// Widget layout state
 	type WidgetId = 'master-controls' | 'drum-sequencer' | 'physics-scene' | 'circle-of-fifths' | 'music-grid';
@@ -120,11 +151,26 @@
 				column.addEventListener('touchdrop', handleTouchDrop as EventListener);
 			});
 
+			// Auto-join session from URL ?session= param
+			const urlParams = new URLSearchParams(window.location.search);
+			const sessionParam = urlParams.get('session');
+			if (sessionParam) {
+				sessionSync.join(sessionParam);
+			}
+
+			// Poll for remote state changes (runs alongside the store's own polling)
+			const syncInterval = setInterval(applyRemoteSessionState, 300);
+
 			return () => {
+				clearInterval(syncInterval);
 				columnElements.forEach((column) => {
 					column.removeEventListener('touchdragover', handleTouchDragOver as EventListener);
 					column.removeEventListener('touchdrop', handleTouchDrop as EventListener);
 				});
+				// Leave session on unmount
+				if (sessionSync.connected) {
+					sessionSync.leave();
+				}
 			};
 		}
 	});
@@ -428,18 +474,18 @@
 	function handleKeyChange(event: CustomEvent) {
 		selectedKey = event.detail.key;
 		scaleFrequencies = event.detail.frequencies;
-		console.log('Key changed to:', selectedKey, 'Frequencies:', scaleFrequencies);
+		syncToSession({ selectedKey });
 	}
 
 	function handleScaleChange(event: CustomEvent) {
 		selectedScale = event.detail.scale;
 		scaleFrequencies = event.detail.frequencies;
-		console.log('Scale changed to:', selectedScale, 'Frequencies:', scaleFrequencies);
+		syncToSession({ selectedScale });
 	}
 
 	function handleChordChange(event: CustomEvent) {
 		selectedChord = event.detail.chord;
-		console.log('Chord changed to:', selectedChord);
+		syncToSession({ selectedChord });
 	}
 
 	function toggleCircleOfFifths() {
@@ -472,8 +518,10 @@
 	function togglePlayPause() {
 		if (isSequencerRunning) {
 			pauseSequencer();
+			syncToSession({ isSequencerRunning: false });
 		} else {
 			playSequencer();
+			syncToSession({ isSequencerRunning: true });
 		}
 	}
 
@@ -485,6 +533,7 @@
 			sequencerTimeoutId = null;
 		}
 		currentSequenceStep = -1; // Reset to no active step
+		syncToSession({ isSequencerRunning: false });
 	}
 
 	// Note: Removed auto-start on interaction - user must explicitly play sequencer
@@ -613,6 +662,7 @@
 								max="1"
 								step="0.01"
 								bind:value={masterVolume}
+								on:input={() => syncToSession({ masterVolume })}
 								class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
 							/>
 							<span class="text-sm text-gray-400">🔊</span>
@@ -634,6 +684,7 @@
 								max="240"
 								step="1"
 								bind:value={tempo}
+								on:input={() => syncToSession({ tempo })}
 								class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
 							/>
 							<span class="text-sm text-gray-400">🐇</span>

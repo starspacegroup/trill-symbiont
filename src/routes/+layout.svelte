@@ -2,6 +2,8 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import AuthHeader from '$lib/components/AuthHeader.svelte';
+	import SessionBar from '$lib/components/SessionBar.svelte';
+	import ToastContainer from '$lib/components/ToastContainer.svelte';
 	import { onMount } from 'svelte';
 
 	let { children } = $props();
@@ -36,8 +38,11 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="fixed top-0 right-0 z-50 p-2">
+<div class="fixed top-0 right-0 z-50 flex items-center gap-3 p-2">
+	<SessionBar />
 	<AuthHeader />
 </div>
+
+<ToastContainer />
 
 {@render children?.()}

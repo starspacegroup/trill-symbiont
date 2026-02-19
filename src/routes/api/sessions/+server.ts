@@ -1,9 +1,11 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/server/db';
-import { sharedSessions } from '$lib/server/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { sharedSessions, sessionPresence } from '$lib/server/db/schema';
+import { eq, desc, sql } from 'drizzle-orm';
 import { encodeBase64url } from '@oslojs/encoding';
+
+const PRESENCE_TIMEOUT_MS = 15_000;
 
 export const GET: RequestHandler = async ({ locals, platform }) => {
   const d1 = platform?.env?.DB;
@@ -12,8 +14,21 @@ export const GET: RequestHandler = async ({ locals, platform }) => {
   }
 
   const db = getDb(d1);
+
+  // Clean up stale presence entries globally
+  const cutoff = Math.floor((Date.now() - PRESENCE_TIMEOUT_MS) / 1000);
+  await db.run(sql`DELETE FROM session_presence WHERE last_seen < ${cutoff}`);
+
+  // Get user's created sessions with member counts
   const userSessions = await db
-    .select()
+    .select({
+      id: sharedSessions.id,
+      name: sharedSessions.name,
+      creatorId: sharedSessions.creatorId,
+      createdAt: sharedSessions.createdAt,
+      isActive: sharedSessions.isActive,
+      memberCount: sql<number>`(SELECT COUNT(*) FROM session_presence WHERE session_id = ${sharedSessions.id})`.as('member_count')
+    })
     .from(sharedSessions)
     .where(eq(sharedSessions.creatorId, locals.user.id))
     .orderBy(desc(sharedSessions.createdAt));
