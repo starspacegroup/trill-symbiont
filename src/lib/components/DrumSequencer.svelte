@@ -475,7 +475,8 @@
 		height: 40px;
 		padding: 0.25rem;
 		font-size: 1rem;
-		flex-shrink: 0;
+		flex: 0 0 40px;
+		aspect-ratio: 1;
 	}
 
 	.drum-mute-button.muted {
@@ -622,7 +623,7 @@
 		}
 
 		.drum-mute-button {
-			width: 36px;
+			width: 32px;
 			height: 32px;
 			font-size: 0.9rem;
 		}
