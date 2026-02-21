@@ -15,9 +15,10 @@
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright test",
-		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
+		"db:migrate": "wrangler d1 migrations apply trill-symbiont-prod --remote",
+		"db:migrate:local": "wrangler d1 migrations apply trill-symbiont-prod --local",
+		"db:migrate:list": "wrangler d1 migrations list trill-symbiont-prod",
 		"db:studio": "drizzle-kit studio",
 		"deploy": "npm run build && wrangler pages deploy",
 		"cf-typegen": "wrangler types src/worker-configuration.d.ts"

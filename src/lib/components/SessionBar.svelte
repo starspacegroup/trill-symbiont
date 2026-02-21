@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { sessionSync } from '$lib/stores/sessionSync.svelte';
+	import { addToast } from '$lib/stores/toastStore.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 
@@ -76,12 +77,18 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ name: newSessionName || undefined })
 			});
-			const data = (await res.json()) as { session?: SharedSession };
+			const data = (await res.json()) as { session?: SharedSession; error?: string };
+			if (!res.ok || data.error) {
+				addToast(data.error || `Failed to create session (${res.status})`, 'error', 5000);
+				return;
+			}
 			if (data.session) {
 				sessions = [data.session, ...sessions];
 				newSessionName = randomHash();
 				await joinSession(data.session.id);
 			}
+		} catch (err) {
+			addToast(`Failed to create session: ${err}`, 'error', 5000);
 		} finally {
 			isCreating = false;
 		}

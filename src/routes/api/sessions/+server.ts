@@ -42,20 +42,25 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
     return json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = (await request.json()) as { name?: string; };
-  const name = body.name?.trim() || `Session ${new Date().toLocaleDateString()}`;
+  try {
+    const body = (await request.json()) as { name?: string; };
+    const name = body.name?.trim() || `Session ${new Date().toLocaleDateString()}`;
 
-  // Generate a short unique code
-  const code = encodeBase64url(crypto.getRandomValues(new Uint8Array(6)));
+    // Generate a short unique code
+    const code = encodeBase64url(crypto.getRandomValues(new Uint8Array(6)));
 
-  const db = getDb(d1);
-  await db.insert(sharedSessions).values({
-    id: code,
-    name,
-    creatorId: locals.user.id
-  });
+    const db = getDb(d1);
+    await db.insert(sharedSessions).values({
+      id: code,
+      name,
+      creatorId: locals.user.id
+    });
 
-  return json({ session: { id: code, name, creatorId: locals.user.id, isActive: true } });
+    return json({ session: { id: code, name, creatorId: locals.user.id, isActive: true } });
+  } catch (err) {
+    console.error('Failed to create session:', err);
+    return json({ error: String(err) }, { status: 500 });
+  }
 };
 
 export const DELETE: RequestHandler = async ({ request, locals, platform }) => {

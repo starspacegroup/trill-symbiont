@@ -13,6 +13,11 @@ npm run test:unit -- --run src/demo.spec.ts   # Run single test file
 npm run test:e2e                               # Run e2e tests (playwright)
 npm run test                                   # Run all tests
 npm run deploy                                 # Deploy to Cloudflare Pages
+npm run db:generate                            # Generate migration SQL from schema changes
+npm run db:migrate:local                       # Apply migrations to local D1
+npm run db:migrate                             # Apply migrations to remote/production D1
+npm run db:migrate:list                        # List migration status
+npm run db:studio                              # Open Drizzle Studio
 ```
 
 ## Code Style
@@ -57,5 +62,22 @@ npm run deploy                                 # Deploy to Cloudflare Pages
 
 ### Database
 
-- Drizzle ORM with LibSQL
-- Commands: `npm run db:push`, `npm run db:generate`, `npm run db:studio`
+- Drizzle ORM with Cloudflare D1 (SQLite)
+- Schema: `src/lib/server/db/schema.ts`
+- Migrations output: `migrations/` (used by both Drizzle Kit and Wrangler)
+
+### Database Migration Workflow
+
+1. Edit the schema in `src/lib/server/db/schema.ts`
+2. Run `npm run db:generate` to create a new migration SQL file in `migrations/`
+3. Run `npm run db:migrate:local` to apply to local D1
+4. Test locally, then commit the migration file
+5. Run `npm run db:migrate` to apply to production D1
+
+### Migration Rules (CRITICAL — AI agents must follow)
+
+- **NEVER modify or delete an existing migration file in `migrations/`** — these are append-only. Once a migration has been pushed to `main`, it has been applied to production. Editing it will cause drift between the schema and the actual database.
+- **NEVER rename migration files** — Wrangler tracks them by filename in the `d1_migrations` table.
+- **NEVER reorder migrations** — the `migrations/meta/_journal.json` records the sequence.
+- **Only create NEW migration files** by running `npm run db:generate` after changing the schema. Do not hand-write migration SQL unless absolutely necessary.
+- **The `drizzle/` directory is deprecated** — do not use it. All migrations go to `migrations/`.

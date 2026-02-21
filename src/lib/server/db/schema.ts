@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(), // Discord user ID
@@ -47,4 +47,6 @@ export const sessionPresence = sqliteTable('session_presence', {
   lastSeen: integer('last_seen', { mode: 'timestamp' })
     .notNull()
     .$defaultFn(() => new Date())
-});
+}, (table) => [
+  primaryKey({ columns: [table.sessionId, table.userId] })
+]);
