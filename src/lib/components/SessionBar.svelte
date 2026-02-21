@@ -13,8 +13,12 @@
 
 	let expanded = $state(false);
 	let sessions = $state<SharedSession[]>([]);
+	function randomHash() {
+		return Math.random().toString(36).substring(2, 8);
+	}
+
 	let joinCode = $state('');
-	let newSessionName = $state('');
+	let newSessionName = $state(randomHash());
 	let isCreating = $state(false);
 	let loading = $state(false);
 
@@ -75,7 +79,7 @@
 			const data = (await res.json()) as { session?: SharedSession };
 			if (data.session) {
 				sessions = [data.session, ...sessions];
-				newSessionName = '';
+				newSessionName = randomHash();
 				await joinSession(data.session.id);
 			}
 		} finally {
