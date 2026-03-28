@@ -2665,19 +2665,14 @@
 
 	.math-grid {
 		display: grid;
-		gap: 1.5rem;
+		gap: 1rem;
 		grid-template-columns: 1fr;
 	}
 
-	@media (min-width: 900px) {
+	@media (min-width: 760px) {
 		.math-grid {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	@media (min-width: 1400px) {
-		.math-grid {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 1.5rem;
 		}
 	}
 
@@ -2685,8 +2680,10 @@
 		background: linear-gradient(165deg, rgba(15, 23, 42, 0.85), rgba(25, 15, 50, 0.7));
 		border: 1px solid rgba(147, 112, 219, 0.3);
 		border-radius: 14px;
-		padding: 1.4rem;
+		padding: 1rem;
 		backdrop-filter: blur(12px);
+		min-width: 0;
+		overflow: hidden;
 	}
 
 	.math-domain-card.math-composite {
@@ -2697,12 +2694,13 @@
 
 	.math-domain-title {
 		margin: 0 0 1rem;
-		font-size: 1.05rem;
+		font-size: 1.3rem;
 		font-weight: 600;
 		color: #c4b5fd;
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		line-height: 1.3;
 	}
 
 	.formula-block {
@@ -2711,39 +2709,47 @@
 	}
 
 	.formula-item {
-		padding: 0.85rem;
+		padding: 0.95rem;
 		background: rgba(5, 8, 18, 0.45);
 		border-left: 3px solid rgba(147, 112, 219, 0.4);
 		border-radius: 8px;
+		min-width: 0;
 	}
 
 	.formula-label {
 		display: block;
-		font-size: 0.8rem;
+		font-size: 0.95rem;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
 		color: rgba(255, 255, 255, 0.65);
 		margin-bottom: 0.5rem;
+		line-height: 1.4;
 	}
 
 	.formula-display {
 		background: rgba(15, 10, 35, 0.8);
 		border: 1px solid rgba(147, 112, 219, 0.15);
 		border-radius: 6px;
-		padding: 0.8rem 1rem;
+		padding: 0.9rem 1rem;
 		font-family: 'Courier New', monospace;
-		font-size: 0.85rem;
-		line-height: 1.6;
+		font-size: 1.08rem;
+		line-height: 1.75;
 		color: #e0d5ff;
 		margin: 0.6rem 0;
-		overflow-x: auto;
+		overflow-x: hidden;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		word-break: break-word;
+		hyphens: auto;
 	}
 
 	.formula-symbol {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.25em;
+		display: block;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		word-break: break-word;
+		min-width: 0;
 	}
 
 	.fraction {
@@ -2770,29 +2776,49 @@
 
 	.formula-explanation {
 		display: block;
-		font-size: 0.75rem;
+		font-size: 0.98rem;
 		color: rgba(255, 255, 255, 0.64);
-		line-height: 1.5;
+		line-height: 1.65;
 		margin-top: 0.5rem;
 		font-style: italic;
+		overflow-wrap: anywhere;
+		word-break: break-word;
 	}
 
-	@media (min-width: 1200px) {
+	@media (min-width: 1024px) {
 		.math-domain-title {
-			font-size: 1.15rem;
+			font-size: 1.4rem;
 		}
 
 		.formula-display {
-			font-size: 0.92rem;
+			font-size: 1.14rem;
 			padding: 1rem 1.2rem;
 		}
 
 		.formula-explanation {
-			font-size: 0.82rem;
+			font-size: 1.02rem;
 		}
 
 		.math-domain-card {
-			padding: 1.6rem;
+			padding: 1.2rem;
+		}
+	}
+
+	@media (min-width: 1360px) {
+		.math-domain-card {
+			padding: 1.35rem;
+		}
+
+		.formula-label {
+			font-size: 1rem;
+		}
+
+		.formula-display {
+			font-size: 1.2rem;
+		}
+
+		.formula-explanation {
+			font-size: 1.06rem;
 		}
 	}
 
