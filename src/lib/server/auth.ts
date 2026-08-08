@@ -78,7 +78,7 @@ export async function invalidateSession(d1: D1Database, sessionId: string) {
 
 export async function upsertUser(
 	d1: D1Database,
-	discordUser: { id: string; username: string; global_name: string | null; avatar: string | null; }
+	discordUser: { id: string; username: string; global_name: string | null; avatar: string | null }
 ) {
 	const db = getDb(d1);
 	const now = new Date();

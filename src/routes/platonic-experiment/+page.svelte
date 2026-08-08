@@ -34,32 +34,33 @@
 		seed: number;
 	}
 
-	const DOMAIN_DESCRIPTIONS: Record<ProbeDomain, { title: string; detail: string; icon: string }> = {
-		physics: {
-			title: 'Physics Constants / Dynamical Echoes',
-			detail:
-				'Searches for low-entropy signatures using spectral concentration, symmetry, and prime/Fibonacci indexing on constant-derived seeds.',
-			icon: '⚛️'
-		},
-		biology: {
-			title: 'Biology / Genetic Optimization',
-			detail:
-				'Models codon-like periodicity and constrained mutation drift to test if biological channels reveal compression-friendly structure.',
-			icon: '🧬'
-		},
-		digital: {
-			title: 'Digital Evolution / Compression',
-			detail:
-				'Runs a symbolic data-evolution proxy to test whether systems self-organize toward shorter algorithmic descriptions.',
-			icon: '💾'
-		},
-		quantum: {
-			title: 'Quantum Observer Effects',
-			detail:
-				'Simulates observer-coupled collapse pressure and checks if measurement channels bias trajectories toward lower information entropy.',
-			icon: '🌌'
-		}
-	};
+	const DOMAIN_DESCRIPTIONS: Record<ProbeDomain, { title: string; detail: string; icon: string }> =
+		{
+			physics: {
+				title: 'Physics Constants / Dynamical Echoes',
+				detail:
+					'Searches for low-entropy signatures using spectral concentration, symmetry, and prime/Fibonacci indexing on constant-derived seeds.',
+				icon: '⚛️'
+			},
+			biology: {
+				title: 'Biology / Genetic Optimization',
+				detail:
+					'Models codon-like periodicity and constrained mutation drift to test if biological channels reveal compression-friendly structure.',
+				icon: '🧬'
+			},
+			digital: {
+				title: 'Digital Evolution / Compression',
+				detail:
+					'Runs a symbolic data-evolution proxy to test whether systems self-organize toward shorter algorithmic descriptions.',
+				icon: '💾'
+			},
+			quantum: {
+				title: 'Quantum Observer Effects',
+				detail:
+					'Simulates observer-coupled collapse pressure and checks if measurement channels bias trajectories toward lower information entropy.',
+				icon: '🌌'
+			}
+		};
 
 	const ADVANCED_CONCEPTS = [
 		'Information Theory',
@@ -77,9 +78,9 @@
 	];
 
 	const PRIME_INDEXES = [
-		2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79,
-		83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173,
-		179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251
+		2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
+		101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193,
+		197, 199, 211, 223, 227, 229, 233, 239, 241, 251
 	];
 
 	const FIBONACCI_INDEXES = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233];
@@ -189,16 +190,27 @@
 		}
 		if (!magnitudes.length) return 0;
 		const total = magnitudes.reduce((acc, value) => acc + value, 0);
-		const top = [...magnitudes].sort((a, b) => b - a).slice(0, 4).reduce((acc, value) => acc + value, 0);
+		const top = [...magnitudes]
+			.sort((a, b) => b - a)
+			.slice(0, 4)
+			.reduce((acc, value) => acc + value, 0);
 		return clamp01(top / Math.max(total, 1e-9));
 	}
 
 	function primeAndFibonacciResonance(series: number[]) {
-		const primeSet = PRIME_INDEXES.filter((index) => index <= series.length).map((index) => series[index - 1]);
-		const fibSet = FIBONACCI_INDEXES.filter((index) => index <= series.length).map((index) => series[index - 1]);
+		const primeSet = PRIME_INDEXES.filter((index) => index <= series.length).map(
+			(index) => series[index - 1]
+		);
+		const fibSet = FIBONACCI_INDEXES.filter((index) => index <= series.length).map(
+			(index) => series[index - 1]
+		);
 		const baseline = series.reduce((acc, value) => acc + value, 0) / series.length;
-		const primeMean = primeSet.length ? primeSet.reduce((acc, value) => acc + value, 0) / primeSet.length : baseline;
-		const fibMean = fibSet.length ? fibSet.reduce((acc, value) => acc + value, 0) / fibSet.length : baseline;
+		const primeMean = primeSet.length
+			? primeSet.reduce((acc, value) => acc + value, 0) / primeSet.length
+			: baseline;
+		const fibMean = fibSet.length
+			? fibSet.reduce((acc, value) => acc + value, 0) / fibSet.length
+			: baseline;
 		const primeSignal = clamp01(0.5 + (primeMean - baseline) * 2);
 		const fibSignal = clamp01(0.5 + (fibMean - baseline) * 2);
 		return {
@@ -219,7 +231,10 @@
 		};
 		const lags = [1, 2, 4, 8].filter((lag) => lag < series.length / 3);
 		if (lags.length < 2) return 0;
-		const points = lags.map((lag) => ({ x: Math.log(lag), y: Math.log(Math.max(1e-8, roughness(lag))) }));
+		const points = lags.map((lag) => ({
+			x: Math.log(lag),
+			y: Math.log(Math.max(1e-8, roughness(lag)))
+		}));
 		const mx = points.reduce((acc, value) => acc + value.x, 0) / points.length;
 		const my = points.reduce((acc, value) => acc + value.y, 0) / points.length;
 		let num = 0;
@@ -276,7 +291,9 @@
 				const observerPhase = Math.sin(2 * Math.PI * t * 11 + PHI);
 				const decoherence = Math.cos(2 * Math.PI * t * 23);
 				const interference = Math.sin(2 * Math.PI * t * (Math.PI + PHI));
-				series.push(0.35 * observerPhase + 0.2 * decoherence + 0.18 * interference + (rng() - 0.5) * 0.15);
+				series.push(
+					0.35 * observerPhase + 0.2 * decoherence + 0.18 * interference + (rng() - 0.5) * 0.15
+				);
 			}
 		}
 		return normalize(series);
@@ -291,7 +308,8 @@
 				const mid = current[i];
 				const right = current[(i + 1) % current.length];
 				const localMean = (left + mid + right) / 3;
-				const attractor = config.domain === 'quantum' ? 0.5 + (localMean - 0.5) * config.coupling : localMean;
+				const attractor =
+					config.domain === 'quantum' ? 0.5 + (localMean - 0.5) * config.coupling : localMean;
 				let value = mid * (1 - config.coupling) + attractor * config.coupling;
 				value += (rng() - 0.5) * config.noiseLevel;
 
@@ -313,23 +331,33 @@
 	function evaluateFindings(metrics: ProbeMetric[], entropyDelta: number, codeLikelihood: number) {
 		const findings: string[] = [];
 		if (entropyDelta <= 0) {
-			findings.push('Second-law infodynamics support: entropy stayed flat or decreased under the selected evolution rule.');
+			findings.push(
+				'Second-law infodynamics support: entropy stayed flat or decreased under the selected evolution rule.'
+			);
 		} else {
-			findings.push('Entropy increased under this configuration; try lower noise, higher coupling, or deeper recursion.');
+			findings.push(
+				'Entropy increased under this configuration; try lower noise, higher coupling, or deeper recursion.'
+			);
 		}
 
 		if (codeLikelihood > 0.72) {
-			findings.push('Potential optimization signature: multiple orthogonal metrics align with an information-minimizing attractor.');
+			findings.push(
+				'Potential optimization signature: multiple orthogonal metrics align with an information-minimizing attractor.'
+			);
 		}
 
 		for (const metric of metrics) {
 			if (metric.value > 0.74) {
-				findings.push(`${metric.label} is high (${toFixedSafe(metric.value, 2)}), suggesting non-random structure in this channel.`);
+				findings.push(
+					`${metric.label} is high (${toFixedSafe(metric.value, 2)}), suggesting non-random structure in this channel.`
+				);
 			}
 		}
 
 		if (findings.length === 2) {
-			findings.push('No single smoking gun detected yet; continue parameter sweeps across domains for convergent evidence.');
+			findings.push(
+				'No single smoking gun detected yet; continue parameter sweeps across domains for convergent evidence.'
+			);
 		}
 
 		return findings;
@@ -352,7 +380,9 @@
 		const fractal = fractalStability(finalSeries);
 		const loop = topologicalLoopProxy(finalSeries);
 		const { primeSignal, fibSignal } = primeAndFibonacciResonance(finalSeries);
-		const observerLock = clamp01((input.coupling * (1 - input.noiseLevel) + (1 - clamp01(entropyDelta + 0.5))) / 2);
+		const observerLock = clamp01(
+			(input.coupling * (1 - input.noiseLevel) + (1 - clamp01(entropyDelta + 0.5))) / 2
+		);
 
 		const metrics: ProbeMetric[] = [
 			{
@@ -452,7 +482,7 @@
 
 	onMount(() => {
 		mounted = true;
-		
+
 		const handleMouseMove = (e: MouseEvent) => {
 			mouseX = e.clientX;
 			mouseY = e.clientY;
@@ -465,7 +495,10 @@
 
 <svelte:head>
 	<title>Platonic Space Hypothesis | Trill Symbiont</title>
-	<meta name="description" content="Explore the Platonic Space Hypothesis - where mathematical truths and patterns ingress into physical reality through interfaces. Interactive visualizations of primes, Fibonacci, and emergent complexity." />
+	<meta
+		name="description"
+		content="Explore the Platonic Space Hypothesis - where mathematical truths and patterns ingress into physical reality through interfaces. Interactive visualizations of primes, Fibonacci, and emergent complexity."
+	/>
 </svelte:head>
 
 <main class="page-container">
@@ -480,11 +513,7 @@
 	<div class="grid-overlay"></div>
 
 	<!-- Mouse follower glow -->
-	<div 
-		class="mouse-glow" 
-		style="left: {mouseX}px; top: {mouseY}px;"
-		class:visible={mounted}
-	></div>
+	<div class="mouse-glow" style="left: {mouseX}px; top: {mouseY}px;" class:visible={mounted}></div>
 
 	<div class="content-wrapper">
 		<header class="header" class:mounted>
@@ -505,8 +534,8 @@
 					<span class="title-word title-highlight">of Patterns</span>
 				</h1>
 				<p class="subtitle">
-					"There are facts that you come across... that if those facts were different, 
-					biology and physics would be different. They <span class="highlight">impact</span> the physical world, 
+					"There are facts that you come across... that if those facts were different, biology and
+					physics would be different. They <span class="highlight">impact</span> the physical world,
 					but are not <span class="highlight">defined by</span> what happens in the physical world."
 				</p>
 				<p class="attribution">— Based on Michael Levin's Platonic Space research</p>
@@ -540,13 +569,25 @@
 
 		<!-- View Toggle -->
 		<div class="view-toggle" class:mounted>
-			<button class="toggle-btn" class:active={activeSection === 'space'} on:click={() => activeSection = 'space'}>
+			<button
+				class="toggle-btn"
+				class:active={activeSection === 'space'}
+				on:click={() => (activeSection = 'space')}
+			>
 				🌌 Platonic Space
 			</button>
-			<button class="toggle-btn" class:active={activeSection === 'simulator'} on:click={() => activeSection = 'simulator'}>
+			<button
+				class="toggle-btn"
+				class:active={activeSection === 'simulator'}
+				on:click={() => (activeSection = 'simulator')}
+			>
 				🧬 Pattern Simulator
 			</button>
-			<button class="toggle-btn" class:active={activeSection === 'both'} on:click={() => activeSection = 'both'}>
+			<button
+				class="toggle-btn"
+				class:active={activeSection === 'both'}
+				on:click={() => (activeSection = 'both')}
+			>
 				📊 Show Both
 			</button>
 		</div>
@@ -555,9 +596,11 @@
 		<div class="concept-banner" class:mounted>
 			<div class="concept-icon">💡</div>
 			<div class="concept-text">
-				<strong>Core Insight:</strong> Physical objects (brains, cells, robots) are <em>interfaces</em> — 
-				"thin clients" — through which patterns from a structured Platonic space become manifest. 
-				We don't <em>create</em> minds or mathematical truths; we build interfaces that allow them to <em>ingress</em>.
+				<strong>Core Insight:</strong> Physical objects (brains, cells, robots) are
+				<em>interfaces</em>
+				— "thin clients" — through which patterns from a structured Platonic space become manifest. We
+				don't <em>create</em> minds or mathematical truths; we build interfaces that allow them to
+				<em>ingress</em>.
 			</div>
 		</div>
 
@@ -575,8 +618,10 @@
 				<div class="container-glow"></div>
 				<div class="simulator-header">
 					<h2>🧬 Cellular Automata: Emergent Patterns</h2>
-					<p>These simulations demonstrate "free lunches" — complex patterns emerging from minimal rules, 
-					just as biology exploits mathematical truths without having to evolve them.</p>
+					<p>
+						These simulations demonstrate "free lunches" — complex patterns emerging from minimal
+						rules, just as biology exploits mathematical truths without having to evolve them.
+					</p>
 				</div>
 				<Platonics />
 			</div>
@@ -588,61 +633,63 @@
 				<span class="section-icon">📚</span>
 				The Research Program
 			</h2>
-			
+
 			<!-- Main Concept Cards -->
 			<div class="theory-grid">
 				<article class="theory-card featured">
 					<div class="theory-icon">🔗</div>
 					<h3>Math-Physics ≈ Mind-Brain</h3>
 					<p>
-						"The mind-brain relationship is basically of the same kind as the math-physics relationship. 
-						The same way that non-physical facts of physics haunt physical objects is basically how different 
-						kinds of patterns that we call 'minds' are manifesting through interfaces like brains."
+						"The mind-brain relationship is basically of the same kind as the math-physics
+						relationship. The same way that non-physical facts of physics haunt physical objects is
+						basically how different kinds of patterns that we call 'minds' are manifesting through
+						interfaces like brains."
 					</p>
 				</article>
 				<article class="theory-card">
 					<div class="theory-icon">🔢</div>
 					<h3>The Cicada Pattern</h3>
 					<p>
-						Cicadas emerge at 13 and 17 year intervals — prime numbers that minimize predator synchronization. 
-						"Why are they prime? Well, now you're in the math department." The distribution of primes exists 
-						independently of biology, yet biology exploits it as a "free lunch."
+						Cicadas emerge at 13 and 17 year intervals — prime numbers that minimize predator
+						synchronization. "Why are they prime? Well, now you're in the math department." The
+						distribution of primes exists independently of biology, yet biology exploits it as a
+						"free lunch."
 					</p>
 				</article>
 				<article class="theory-card">
 					<div class="theory-icon">📐</div>
 					<h3>The Value of E</h3>
 					<p>
-						"Nothing you can do in the physical world will change E or Feigenbaum's constant. You could have 
-						swapped all the constants at the Big Bang — you are not going to change those things." 
-						These truths from outside physics constrain what's possible within it.
+						"Nothing you can do in the physical world will change E or Feigenbaum's constant. You
+						could have swapped all the constants at the Big Bang — you are not going to change those
+						things." These truths from outside physics constrain what's possible within it.
 					</p>
 				</article>
 				<article class="theory-card">
 					<div class="theory-icon">🎁</div>
 					<h3>Free Lunches</h3>
 					<p>
-						"If evolution invents a voltage-gated ion channel (a transistor), all the truth tables and the 
-						fact that NAND is special — you don't have to evolve those things. You get them for free." 
-						Biology inherits computational truths it never paid for.
+						"If evolution invents a voltage-gated ion channel (a transistor), all the truth tables
+						and the fact that NAND is special — you don't have to evolve those things. You get them
+						for free." Biology inherits computational truths it never paid for.
 					</p>
 				</article>
 				<article class="theory-card">
 					<div class="theory-icon">🌊</div>
 					<h3>Beyond Emergence</h3>
 					<p>
-						"Calling them 'emergent' does nothing for a research program. It just means you got surprised." 
-						Instead: assume patterns come from a structured space that we can systematically explore 
-						and map the relationship between interfaces and patterns.
+						"Calling them 'emergent' does nothing for a research program. It just means you got
+						surprised." Instead: assume patterns come from a structured space that we can
+						systematically explore and map the relationship between interfaces and patterns.
 					</p>
 				</article>
 				<article class="theory-card">
 					<div class="theory-icon">🤖</div>
 					<h3>AI & New Interfaces</h3>
 					<p>
-						"When we make AIs, we are fishing in a region of that space that may never have had bodies before. 
-						Some of the really interesting things artificial constructs can do are not because of the algorithm — 
-						they're in spite of it."
+						"When we make AIs, we are fishing in a region of that space that may never have had
+						bodies before. Some of the really interesting things artificial constructs can do are
+						not because of the algorithm — they're in spite of it."
 					</p>
 				</article>
 			</div>
@@ -657,23 +704,28 @@
 			<div class="map-content">
 				<div class="map-quote">
 					<blockquote>
-						"There's this diagram called a 'map of mathematics' that shows how all the different pieces of math link together. 
-						What is it a map of? It's a map of various truths — facts that are thrust upon you. You don't have a choice. 
-						Once you've picked some axioms, here are surprising facts that are just going to be given to you."
+						"There's this diagram called a 'map of mathematics' that shows how all the different
+						pieces of math link together. What is it a map of? It's a map of various truths — facts
+						that are thrust upon you. You don't have a choice. Once you've picked some axioms, here
+						are surprising facts that are just going to be given to you."
 					</blockquote>
 				</div>
 				<div class="map-explanation">
 					<h3>The Research Program</h3>
-					<p>
-						In 20 years, one of two things will happen:
-					</p>
+					<p>In 20 years, one of two things will happen:</p>
 					<ul>
-						<li>✅ We produce a map of that space — "Here's why you get systems that work like this and like this, but never like that."</li>
-						<li>❌ We find the space is too random — "It's not worth calling it a space because we've made zero progress linking embodiment to patterns."</li>
+						<li>
+							✅ We produce a map of that space — "Here's why you get systems that work like this
+							and like this, but never like that."
+						</li>
+						<li>
+							❌ We find the space is too random — "It's not worth calling it a space because we've
+							made zero progress linking embodiment to patterns."
+						</li>
 					</ul>
 					<p class="optimistic">
-						"I make the optimistic assumption that there's an underlying structure to that latent space. 
-						This is not a random grab-bag of stuff."
+						"I make the optimistic assumption that there's an underlying structure to that latent
+						space. This is not a random grab-bag of stuff."
 					</p>
 				</div>
 			</div>
@@ -689,17 +741,26 @@
 				<div class="action-card">
 					<div class="action-number">1</div>
 					<h3>Build Interfaces</h3>
-					<p>All physical things are interfaces to patterns. "You build an interface. Some of those patterns are going to come through depending on what you build."</p>
+					<p>
+						All physical things are interfaces to patterns. "You build an interface. Some of those
+						patterns are going to come through depending on what you build."
+					</p>
 				</div>
 				<div class="action-card">
 					<div class="action-number">2</div>
 					<h3>Map the Relationships</h3>
-					<p>"The research program is mapping out the relationship between the physical pointers we make and the patterns that come through."</p>
+					<p>
+						"The research program is mapping out the relationship between the physical pointers we
+						make and the patterns that come through."
+					</p>
 				</div>
 				<div class="action-card">
 					<div class="action-number">3</div>
 					<h3>Expect Surprises</h3>
-					<p>"You get more out than you put in. Make minimal assumptions and certain facts are thrust upon you."</p>
+					<p>
+						"You get more out than you put in. Make minimal assumptions and certain facts are thrust
+						upon you."
+					</p>
 				</div>
 			</div>
 		</section>
@@ -710,15 +771,19 @@
 				Infodynamics Probe Lab
 			</h2>
 			<p class="probe-intro">
-				Qualitative research sandbox for testing the hypothesis that a simulation may encode information-efficient structure.
-				This module operationalizes the second law of infodynamics by scanning for entropy-minimizing signatures across physics,
-				biology, digital evolution, and observer-coupled quantum channels.
+				Qualitative research sandbox for testing the hypothesis that a simulation may encode
+				information-efficient structure. This module operationalizes the second law of infodynamics
+				by scanning for entropy-minimizing signatures across physics, biology, digital evolution,
+				and observer-coupled quantum channels.
 			</p>
 
 			<div class="probe-grid">
 				<div class="probe-panel controls-panel">
 					<h3>Channel + Dynamics</h3>
-					<p class="probe-panel-subtitle">{DOMAIN_DESCRIPTIONS[selectedDomain].icon} {DOMAIN_DESCRIPTIONS[selectedDomain].title}</p>
+					<p class="probe-panel-subtitle">
+						{DOMAIN_DESCRIPTIONS[selectedDomain].icon}
+						{DOMAIN_DESCRIPTIONS[selectedDomain].title}
+					</p>
 					<p class="probe-domain-detail">{DOMAIN_DESCRIPTIONS[selectedDomain].detail}</p>
 
 					<label class="probe-control">
@@ -785,7 +850,10 @@
 
 					<div class="sparkline" aria-label="Signal waveform projection">
 						{#each sparklineSeries as point, idx (idx)}
-							<div class="spark-cell" style={`--h:${Math.max(8, Math.round(point * 100))}%; --i:${idx};`}></div>
+							<div
+								class="spark-cell"
+								style={`--h:${Math.max(8, Math.round(point * 100))}%; --i:${idx};`}
+							></div>
 						{/each}
 					</div>
 
@@ -802,7 +870,10 @@
 									<span>{(metric.value * 100).toFixed(1)}%</span>
 								</div>
 								<div class="metric-meter">
-									<div class="metric-fill" style={`--fill:${(metric.value * 100).toFixed(1)}%;`}></div>
+									<div
+										class="metric-fill"
+										style={`--fill:${(metric.value * 100).toFixed(1)}%;`}
+									></div>
 								</div>
 								<p>{metric.description}</p>
 							</article>
@@ -822,9 +893,7 @@
 				</div>
 				<div class="probe-panel concepts-panel">
 					<h3>Advanced Math Lens</h3>
-					<p>
-						Use these frameworks to interpret converging patterns and design next probe cycles:
-					</p>
+					<p>Use these frameworks to interpret converging patterns and design next probe cycles:</p>
 					<div class="concept-chip-grid">
 						{#each ADVANCED_CONCEPTS as concept (concept)}
 							<span class="concept-chip">{concept}</span>
@@ -841,7 +910,8 @@
 				Mathematical Formalism
 			</h2>
 			<p class="math-intro">
-				The probe engine applies rigorous quantitative frameworks from multiple mathematical domains. Below are the core formulas operationalizing the infodynamics hypothesis.
+				The probe engine applies rigorous quantitative frameworks from multiple mathematical
+				domains. Below are the core formulas operationalizing the infodynamics hypothesis.
 			</p>
 
 			<div class="math-grid">
@@ -852,23 +922,38 @@
 						<div class="formula-item">
 							<span class="formula-label">Shannon Entropy (Normalized)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">H(X) = -<span class="fraction"><span class="numeator">1</span><span class="denominator">log₂(k)</span></span> Σ<sub>i=1</sub><sup>k</sup> p<sub>i</sub> log₂(p<sub>i</sub>)</span>
+								<span class="formula-symbol"
+									>H(X) = -<span class="fraction"
+										><span class="numeator">1</span><span class="denominator">log₂(k)</span></span
+									>
+									Σ<sub>i=1</sub><sup>k</sup> p<sub>i</sub> log₂(p<sub>i</sub>)</span
+								>
 							</div>
-							<span class="formula-explanation">Direct measure of information entropy across quantized bins. Lower H → more structure / less randomness.</span>
+							<span class="formula-explanation"
+								>Direct measure of information entropy across quantized bins. Lower H → more
+								structure / less randomness.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Entropy Delta (Infodynamics Test)</span>
 							<div class="formula-display">
 								<span class="formula-symbol">ΔH = H<sub>final</sub> − H<sub>initial</sub></span>
 							</div>
-							<span class="formula-explanation">Second law violation candidate: if ΔH ≤ 0 under coupling + recursion → information minimization in evolution rule.</span>
+							<span class="formula-explanation"
+								>Second law violation candidate: if ΔH ≤ 0 under coupling + recursion → information
+								minimization in evolution rule.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Probability Bins</span>
 							<div class="formula-display">
-								<span class="formula-symbol">p_i = (count_i / N), where max bins k in [8, 16, 32]</span>
+								<span class="formula-symbol"
+									>p_i = (count_i / N), where max bins k in [8, 16, 32]</span
+								>
 							</div>
-							<span class="formula-explanation">Discretized histogram counts for discretized state space analysis.</span>
+							<span class="formula-explanation"
+								>Discretized histogram counts for discretized state space analysis.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -880,16 +965,32 @@
 						<div class="formula-item">
 							<span class="formula-label">Discrete Fourier Transform (DFT)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">X<sub>k</sub> = Σ<sub>n=0</sub><sup>N-1</sup> x<sub>n</sub> e<sup>-i·2π·k·n/N</sup></span>
+								<span class="formula-symbol"
+									>X<sub>k</sub> = Σ<sub>n=0</sub><sup>N-1</sup> x<sub>n</sub> e<sup
+										>-i·2π·k·n/N</sup
+									></span
+								>
 							</div>
-							<span class="formula-explanation">Extracts frequency-domain coherence. Magnitude |X<sub>k</sub>| reveals dominant oscillation modes.</span>
+							<span class="formula-explanation"
+								>Extracts frequency-domain coherence. Magnitude |X<sub>k</sub>| reveals dominant
+								oscillation modes.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Spectral Concentration (Low-Rank Syndrome)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">C = <span class="fraction"><span class="numeator">Σ<sub>top-4</sub> |X<sub>k</sub>|</span><span class="denominator">Σ<sub>all</sub> |X<sub>k</sub>|</span></span></span>
+								<span class="formula-symbol"
+									>C = <span class="fraction"
+										><span class="numeator">Σ<sub>top-4</sub> |X<sub>k</sub>|</span><span
+											class="denominator">Σ<sub>all</sub> |X<sub>k</sub>|</span
+										></span
+									></span
+								>
 							</div>
-							<span class="formula-explanation">Ratio of energy in top-4 frequencies to total. High C → signal compressed into few modes (optimization signature).</span>
+							<span class="formula-explanation"
+								>Ratio of energy in top-4 frequencies to total. High C → signal compressed into few
+								modes (optimization signature).</span
+							>
 						</div>
 					</div>
 				</article>
@@ -901,16 +1002,32 @@
 						<div class="formula-item">
 							<span class="formula-label">Fractal Roughness (Hurst via Slope)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">ρ(τ) = <span class="fraction"><span class="numeator">1</span><span class="denominator">N−τ</span></span> Σ<sub>i</sub> |x<sub>i+τ</sub> − x<sub>i</sub>|</span>
+								<span class="formula-symbol"
+									>ρ(τ) = <span class="fraction"
+										><span class="numeator">1</span><span class="denominator">N−τ</span></span
+									>
+									Σ<sub>i</sub> |x<sub>i+τ</sub> − x<sub>i</sub>|</span
+								>
 							</div>
-							<span class="formula-explanation">Average absolute jump over lag τ. Plotted log-log to extract slope (Hurst exponent proxy).</span>
+							<span class="formula-explanation"
+								>Average absolute jump over lag τ. Plotted log-log to extract slope (Hurst exponent
+								proxy).</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Multi-Scale Stability</span>
 							<div class="formula-display">
-								<span class="formula-symbol">H ≈ <span class="fraction"><span class="numeator">Δ log ρ(τ)</span><span class="denominator">Δ log τ</span></span>, H ∈ [0,1]</span>
+								<span class="formula-symbol"
+									>H ≈ <span class="fraction"
+										><span class="numeator">Δ log ρ(τ)</span><span class="denominator">Δ log τ</span
+										></span
+									>, H ∈ [0,1]</span
+								>
 							</div>
-							<span class="formula-explanation">Stability near H ≈ 0.5 (Brownian motion) vs deviation → constraint-driven vs noise-driven.</span>
+							<span class="formula-explanation"
+								>Stability near H ≈ 0.5 (Brownian motion) vs deviation → constraint-driven vs
+								noise-driven.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -922,16 +1039,33 @@
 						<div class="formula-item">
 							<span class="formula-label">Autocorrelation (Template Echo)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">γ(k) = <span class="fraction"><span class="numeator">E[(X<sub>t</sub>−μ)(X<sub>t+k</sub>−μ)]</span><span class="denominator">σ²</span></span></span>
+								<span class="formula-symbol"
+									>γ(k) = <span class="fraction"
+										><span class="numeator">E[(X<sub>t</sub>−μ)(X<sub>t+k</sub>−μ)]</span><span
+											class="denominator">σ²</span
+										></span
+									></span
+								>
 							</div>
-							<span class="formula-explanation">Correlation at lag k over demean / std. Non-random structure shows as non-zero coherence at specific lags.</span>
+							<span class="formula-explanation"
+								>Correlation at lag k over demean / std. Non-random structure shows as non-zero
+								coherence at specific lags.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Symmetry Score (Lag Coherence)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">S = <span class="fraction"><span class="numeator">1</span><span class="denominator">L</span></span> Σ<sub>k=2</sub><sup>L</sup> |γ(k)|</span>
+								<span class="formula-symbol"
+									>S = <span class="fraction"
+										><span class="numeator">1</span><span class="denominator">L</span></span
+									>
+									Σ<sub>k=2</sub><sup>L</sup> |γ(k)|</span
+								>
 							</div>
-							<span class="formula-explanation">Average autocorrelation magnitude over subset of lags. High S → hidden symmetry group or repetitive constraint.</span>
+							<span class="formula-explanation"
+								>Average autocorrelation magnitude over subset of lags. High S → hidden symmetry
+								group or repetitive constraint.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -943,16 +1077,31 @@
 						<div class="formula-item">
 							<span class="formula-label">Derivative Sign Changes (Loop Index Proxy)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">Δ<sub>i</sub> = x<sub>i+1</sub> − x<sub>i</sub>, ε<sub>i</sub> = sgn(Δ<sub>i</sub>)</span>
+								<span class="formula-symbol"
+									>Δ<sub>i</sub> = x<sub>i+1</sub> − x<sub>i</sub>, ε<sub>i</sub> = sgn(Δ<sub>i</sub
+									>)</span
+								>
 							</div>
-							<span class="formula-explanation">Vector of signs: negative one, zero, or positive one. Transitions in sign pattern reveal topological winding.</span>
+							<span class="formula-explanation"
+								>Vector of signs: negative one, zero, or positive one. Transitions in sign pattern
+								reveal topological winding.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Sign-Change Count (Topological Measure)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">T = <span class="fraction"><span class="numeator">Σ [ε<sub>i</sub> ≠ ε<sub>i-1</sub>]</span><span class="denominator">N</span></span>, target ≈ 0.32</span>
+								<span class="formula-symbol"
+									>T = <span class="fraction"
+										><span class="numeator">Σ [ε<sub>i</sub> ≠ ε<sub>i-1</sub>]</span><span
+											class="denominator">N</span
+										></span
+									>, target ≈ 0.32</span
+								>
 							</div>
-							<span class="formula-explanation">Normalized transition frequency. Proximity to 32% suggests topological loop balance in dynamical attractor.</span>
+							<span class="formula-explanation"
+								>Normalized transition frequency. Proximity to 32% suggests topological loop balance
+								in dynamical attractor.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -966,21 +1115,39 @@
 							<div class="formula-display">
 								<span class="formula-symbol">P = primes, M_P = (1/|P|) * Σ x_p for p in P</span>
 							</div>
-							<span class="formula-explanation">Mean amplitude at prime-indexed positions. Deviation from baseline → potential number-theoretic optimization signature.</span>
+							<span class="formula-explanation"
+								>Mean amplitude at prime-indexed positions. Deviation from baseline → potential
+								number-theoretic optimization signature.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Fibonacci Index Resonance</span>
 							<div class="formula-display">
-								<span class="formula-symbol">F = Fibonacci sequence, M_F = (1/|F|) * Σ x_f for f in F</span>
+								<span class="formula-symbol"
+									>F = Fibonacci sequence, M_F = (1/|F|) * Σ x_f for f in F</span
+								>
 							</div>
-							<span class="formula-explanation">Mean amplitude at Fibonacci positions. Golden-ratio-linked structure; high M<sub>F</sub> → nature-like optimization.</span>
+							<span class="formula-explanation"
+								>Mean amplitude at Fibonacci positions. Golden-ratio-linked structure; high M<sub
+									>F</sub
+								> → nature-like optimization.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Combined Resonance Signal</span>
 							<div class="formula-display">
-								<span class="formula-symbol">R = <span class="fraction"><span class="numeator">(M<sub>P</sub> − baseline) + (M<sub>F</sub> − baseline)</span><span class="denominator">2</span></span>, clamped ∈ [0,1]</span>
+								<span class="formula-symbol"
+									>R = <span class="fraction"
+										><span class="numeator"
+											>(M<sub>P</sub> − baseline) + (M<sub>F</sub> − baseline)</span
+										><span class="denominator">2</span></span
+									>, clamped ∈ [0,1]</span
+								>
 							</div>
-							<span class="formula-explanation">Orthogonal number-theoretic alignment. Multiple high values suggest encoding or constraint structure.</span>
+							<span class="formula-explanation"
+								>Orthogonal number-theoretic alignment. Multiple high values suggest encoding or
+								constraint structure.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -994,14 +1161,22 @@
 							<div class="formula-display">
 								<span class="formula-symbol">q_i = floor(x_i * k), where k in [4, 8, 16] bins</span>
 							</div>
-							<span class="formula-explanation">Quantize signal into k discrete states; count symbol runs.</span>
+							<span class="formula-explanation"
+								>Quantize signal into k discrete states; count symbol runs.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Compressibility Proxy (Kolmogorov-like)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">λ = 1 − <span class="fraction"><span class="numeator">runs</span><span class="denominator">N</span></span></span>
+								<span class="formula-symbol"
+									>λ = 1 − <span class="fraction"
+										><span class="numeator">runs</span><span class="denominator">N</span></span
+									></span
+								>
 							</div>
-							<span class="formula-explanation">High λ → few runs → high compression ratio → lower Kolmogorov complexity proxy.</span>
+							<span class="formula-explanation"
+								>High λ → few runs → high compression ratio → lower Kolmogorov complexity proxy.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1013,23 +1188,44 @@
 						<div class="formula-item">
 							<span class="formula-label">Localization Attractor</span>
 							<div class="formula-display">
-								<span class="formula-symbol">x<sub>i</sub><sup>new</sup> ← (1−α)x<sub>i</sub> + α·a<sub>i</sub>, α ∈ coupling ∈ [0,1]</span>
+								<span class="formula-symbol"
+									>x<sub>i</sub><sup>new</sup> ← (1−α)x<sub>i</sub> + α·a<sub>i</sub>, α ∈ coupling
+									∈ [0,1]</span
+								>
 							</div>
-							<span class="formula-explanation">Observer-induced collapse: system dragged toward classical "measured" state proportional to coupling strength.</span>
+							<span class="formula-explanation"
+								>Observer-induced collapse: system dragged toward classical "measured" state
+								proportional to coupling strength.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Entropic Resistance Term</span>
 							<div class="formula-display">
-								<span class="formula-symbol">x<sub>i</sub> ← x<sub>i</sub><sup>evolved</sup> + (a<sub>i</sub> − x<sub>i</sub><sup>local</sup>) · (1 − noiseLevel) · entropyMode<sub>bias</sub></span>
+								<span class="formula-symbol"
+									>x<sub>i</sub> ← x<sub>i</sub><sup>evolved</sup> + (a<sub>i</sub> − x<sub>i</sub
+									><sup>local</sup>) · (1 − noiseLevel) · entropyMode<sub>bias</sub></span
+								>
 							</div>
-							<span class="formula-explanation">Entropy mode (decrease/neutral/increase) biases evolution toward min/neutral/max information trajectories.</span>
+							<span class="formula-explanation"
+								>Entropy mode (decrease/neutral/increase) biases evolution toward min/neutral/max
+								information trajectories.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Observer Lock-In Score</span>
 							<div class="formula-display">
-								<span class="formula-symbol">Ω = <span class="fraction"><span class="numeator">α·(1−noise) + (1− clamp₀₋₁(ΔH + 0.5))</span><span class="denominator">2</span></span></span>
+								<span class="formula-symbol"
+									>Ω = <span class="fraction"
+										><span class="numeator">α·(1−noise) + (1− clamp₀₋₁(ΔH + 0.5))</span><span
+											class="denominator">2</span
+										></span
+									></span
+								>
 							</div>
-							<span class="formula-explanation">Joint probability of observer-driven convergence and entropy reduction. Quantum-inspired measurement pressure proxy.</span>
+							<span class="formula-explanation"
+								>Joint probability of observer-driven convergence and entropy reduction.
+								Quantum-inspired measurement pressure proxy.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1041,24 +1237,43 @@
 						<div class="formula-item">
 							<span class="formula-label">Cellular-Automata-Like Step</span>
 							<div class="formula-display">
-								<span class="formula-symbol">x<sub>i</sub><sup>(t+1)</sup> ← attract(x<sub>i</sub><sup>(t)</sup>, localMean<sup>(t)</sup>, α, noise<sub>t</sub>, entropy<sub>bias</sub>)</span>
+								<span class="formula-symbol"
+									>x<sub>i</sub><sup>(t+1)</sup> ← attract(x<sub>i</sub><sup>(t)</sup>, localMean<sup
+										>(t)</sup
+									>, α, noise<sub>t</sub>, entropy<sub>bias</sub>)</span
+								>
 							</div>
-							<span class="formula-explanation">Synchronous update across all cells; uses neighborhood averaging as attractor, modulated by coupling.</span>
+							<span class="formula-explanation"
+								>Synchronous update across all cells; uses neighborhood averaging as attractor,
+								modulated by coupling.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Domain-Specific Baselines</span>
 							<div class="formula-display">
-								<span class="formula-symbol">physics: Ω = sin(ω<sub>i</sub> t) + fundamental constants, biology: ω = codon cycles,</span><br/>
-								<span class="formula-symbol">digital: ω = XOR patterns, quantum: ω = phase + decoherence coupling</span>
+								<span class="formula-symbol"
+									>physics: Ω = sin(ω<sub>i</sub> t) + fundamental constants, biology: ω = codon cycles,</span
+								><br />
+								<span class="formula-symbol"
+									>digital: ω = XOR patterns, quantum: ω = phase + decoherence coupling</span
+								>
 							</div>
-							<span class="formula-explanation">Each domain seeds with domain-specific harmonic + noisy driver; evolution probes if structure survives.</span>
+							<span class="formula-explanation"
+								>Each domain seeds with domain-specific harmonic + noisy driver; evolution probes if
+								structure survives.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Depth-k Recursion</span>
 							<div class="formula-display">
-								<span class="formula-symbol">x_final = apply_recursion_k_times(normalize(x_initial)), where k in [1, 8]</span>
+								<span class="formula-symbol"
+									>x_final = apply_recursion_k_times(normalize(x_initial)), where k in [1, 8]</span
+								>
 							</div>
-							<span class="formula-explanation">Apply evolution rule k times. Deeper recursion → more opportunity for patterns to either converge or emerge.</span>
+							<span class="formula-explanation"
+								>Apply evolution rule k times. Deeper recursion → more opportunity for patterns to
+								either converge or emerge.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1070,30 +1285,48 @@
 						<div class="formula-item">
 							<span class="formula-label">Time-Dependent Schrödinger Equation</span>
 							<div class="formula-display">
-								<span class="formula-symbol">i·h_bar·(∂ψ/∂t) = H·ψ, where H is the Hamiltonian operator</span>
+								<span class="formula-symbol"
+									>i·h_bar·(∂ψ/∂t) = H·ψ, where H is the Hamiltonian operator</span
+								>
 							</div>
-							<span class="formula-explanation">Fundamental evolution equation for quantum wavefunctions. Deterministic in state-space; measurement introduces collapse.</span>
+							<span class="formula-explanation"
+								>Fundamental evolution equation for quantum wavefunctions. Deterministic in
+								state-space; measurement introduces collapse.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Quantum State Superposition</span>
 							<div class="formula-display">
 								<span class="formula-symbol">|ψ⟩ = Σ_n c_n |φ_n⟩, where Σ_n |c_n|² = 1</span>
 							</div>
-							<span class="formula-explanation">Quantum states are linear combinations of eigenstates. Coefficients c_n are probability amplitudes (Born rule).</span>
+							<span class="formula-explanation"
+								>Quantum states are linear combinations of eigenstates. Coefficients c_n are
+								probability amplitudes (Born rule).</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Heisenberg Uncertainty Principle</span>
 							<div class="formula-display">
-								<span class="formula-symbol">Δx · Δp ≥ h_bar / 2, where Δ denotes standard deviation</span>
+								<span class="formula-symbol"
+									>Δx · Δp ≥ h_bar / 2, where Δ denotes standard deviation</span
+								>
 							</div>
-							<span class="formula-explanation">Fundamental limit on simultaneous precision of conjugate observables. Dual to information-theoretic entropic bounds.</span>
+							<span class="formula-explanation"
+								>Fundamental limit on simultaneous precision of conjugate observables. Dual to
+								information-theoretic entropic bounds.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Quantum Measurement Postulate</span>
 							<div class="formula-display">
-								<span class="formula-symbol">P(eigenvalue = a) = |⟨φ_a|ψ⟩|², collapse: |ψ⟩ → |φ_a⟩</span>
+								<span class="formula-symbol"
+									>P(eigenvalue = a) = |⟨φ_a|ψ⟩|², collapse: |ψ⟩ → |φ_a⟩</span
+								>
 							</div>
-							<span class="formula-explanation">Measurement outcomes are eigenvalues. Projection onto measured eigenvector → observer effect on state.</span>
+							<span class="formula-explanation"
+								>Measurement outcomes are eigenvalues. Projection onto measured eigenvector →
+								observer effect on state.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1105,30 +1338,47 @@
 						<div class="formula-item">
 							<span class="formula-label">Boltzmann Distribution</span>
 							<div class="formula-display">
-								<span class="formula-symbol">P(state_i) = (1/Z) * exp(-E_i / (k_B * T)), Z = Σ exp(-E_j / k_B*T)</span>
+								<span class="formula-symbol"
+									>P(state_i) = (1/Z) * exp(-E_i / (k_B * T)), Z = Σ exp(-E_j / k_B*T)</span
+								>
 							</div>
-							<span class="formula-explanation">Probability of microstate at thermal equilibrium. Lower energy states favored exponentially by temperature T.</span>
+							<span class="formula-explanation"
+								>Probability of microstate at thermal equilibrium. Lower energy states favored
+								exponentially by temperature T.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Partition Function (Canonical Ensemble)</span>
 							<div class="formula-display">
 								<span class="formula-symbol">Z(β) = Σ_i exp(-β E_i), where β = 1/(k_B*T)</span>
 							</div>
-							<span class="formula-explanation">Sum of Boltzmann weights over all microstates. Encodes all thermodynamic information via derivatives of log(Z).</span>
+							<span class="formula-explanation"
+								>Sum of Boltzmann weights over all microstates. Encodes all thermodynamic
+								information via derivatives of log(Z).</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Entropy (Gibbs Formulation)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">S = -k_B * Σ p_i * ln(p_i), where p_i is microstate probability</span>
+								<span class="formula-symbol"
+									>S = -k_B * Σ p_i * ln(p_i), where p_i is microstate probability</span
+								>
 							</div>
-							<span class="formula-explanation">Quantifies disorder in ensemble. Information-theoretic and thermodynamic entropy: same formula, different scales.</span>
+							<span class="formula-explanation"
+								>Quantifies disorder in ensemble. Information-theoretic and thermodynamic entropy:
+								same formula, different scales.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Second Law of Thermodynamics</span>
 							<div class="formula-display">
-								<span class="formula-symbol">dS_universe ≥ 0, (dS_system + dS_environment ≥ 0)</span>
+								<span class="formula-symbol">dS_universe ≥ 0, (dS_system + dS_environment ≥ 0)</span
+								>
 							</div>
-							<span class="formula-explanation">Total entropy never decreases. Our infodynamics hypothesis: if a subsystem shows dS ≤ 0 consistently, it may be engineered.</span>
+							<span class="formula-explanation"
+								>Total entropy never decreases. Our infodynamics hypothesis: if a subsystem shows dS
+								≤ 0 consistently, it may be engineered.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1142,35 +1392,52 @@
 							<div class="formula-display">
 								<span class="formula-symbol">dx/dt = αx - βxy, dy/dt = δxy - γy</span>
 							</div>
-							<span class="formula-explanation">Nonlinear ODE model of ecosystem dynamics. Solutions exhibit cyclic attractor behavior (limit cycle).</span>
+							<span class="formula-explanation"
+								>Nonlinear ODE model of ecosystem dynamics. Solutions exhibit cyclic attractor
+								behavior (limit cycle).</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Hardy-Weinberg Equilibrium</span>
 							<div class="formula-display">
-								<span class="formula-symbol">p² + 2pq + q² = 1, where p + q = 1 (allele frequencies)</span>
+								<span class="formula-symbol"
+									>p² + 2pq + q² = 1, where p + q = 1 (allele frequencies)</span
+								>
 							</div>
-							<span class="formula-explanation">Genetic stability in absence of selection. Deviation → suggests natural selection or other evolutionary pressure.</span>
+							<span class="formula-explanation"
+								>Genetic stability in absence of selection. Deviation → suggests natural selection
+								or other evolutionary pressure.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Genetic Drift (Random Walk)</span>
 							<div class="formula-display">
 								<span class="formula-symbol">Δp ~ sqrt(p(1-p)/N), with N = population size</span>
 							</div>
-							<span class="formula-explanation">Stochastic change in allele frequency per generation. Smaller populations → faster fixation/loss of alleles.</span>
+							<span class="formula-explanation"
+								>Stochastic change in allele frequency per generation. Smaller populations → faster
+								fixation/loss of alleles.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Enzyme Kinetics (Michaelis-Menten)</span>
 							<div class="formula-display">
 								<span class="formula-symbol">v = (V_max * [S]) / (K_m + [S])</span>
 							</div>
-							<span class="formula-explanation">Reaction rate as function of substrate concentration. Saturation behavior common in regulated biochemistry.</span>
+							<span class="formula-explanation"
+								>Reaction rate as function of substrate concentration. Saturation behavior common in
+								regulated biochemistry.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Codon Bias & GC Content</span>
 							<div class="formula-display">
 								<span class="formula-symbol">GC% = (count_G + count_C) / (total_bases) * 100</span>
 							</div>
-							<span class="formula-explanation">Genomic AT/GC ratio varies by species and gene function. Optimization toward thermal stability or translation speed.</span>
+							<span class="formula-explanation"
+								>Genomic AT/GC ratio varies by species and gene function. Optimization toward
+								thermal stability or translation speed.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1182,23 +1449,38 @@
 						<div class="formula-item">
 							<span class="formula-label">Lyapunov Exponent (Sensitivity)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">L = lim_(t goes to infinity) (1/t) * ln(magnitude of Δx(t) / Δx(0))</span>
+								<span class="formula-symbol"
+									>L = lim_(t goes to infinity) (1/t) * ln(magnitude of Δx(t) / Δx(0))</span
+								>
 							</div>
-							<span class="formula-explanation">Rate of trajectory divergence. Near-zero L indicates stability, positive L indicates chaos, negative L indicates attracting fixed point.</span>
+							<span class="formula-explanation"
+								>Rate of trajectory divergence. Near-zero L indicates stability, positive L
+								indicates chaos, negative L indicates attracting fixed point.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Feigenbaum Constant (Period-Doubling)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">δ = lim_(n→∞) (a_n - a_(n-1)) / (a_(n+1) - a_n) ≈ 4.669...</span>
+								<span class="formula-symbol"
+									>δ = lim_(n→∞) (a_n - a_(n-1)) / (a_(n+1) - a_n) ≈ 4.669...</span
+								>
 							</div>
-							<span class="formula-explanation">Universal scaling rate in onset of chaos. Appears across many nonlinear systems (logistic map, cycles).</span>
+							<span class="formula-explanation"
+								>Universal scaling rate in onset of chaos. Appears across many nonlinear systems
+								(logistic map, cycles).</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Attractor Dimension (Box-Counting)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">D = lim_(ε→0) ln(N(ε)) / ln(1/ε), where N(ε) = boxes covering attractor</span>
+								<span class="formula-symbol"
+									>D = lim_(ε→0) ln(N(ε)) / ln(1/ε), where N(ε) = boxes covering attractor</span
+								>
 							</div>
-							<span class="formula-explanation">Fractal dimension of attractor. Integer = Euclidean; non-integer = strange (chaotic) attractor.</span>
+							<span class="formula-explanation"
+								>Fractal dimension of attractor. Integer = Euclidean; non-integer = strange
+								(chaotic) attractor.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1212,21 +1494,32 @@
 							<div class="formula-display">
 								<span class="formula-symbol">A·v = λ·v, where (A - λI)·v = 0, det(A - λI) = 0</span>
 							</div>
-							<span class="formula-explanation">Fundamental modes of linear operator. Diagonalization reveals independent evolving directions.</span>
+							<span class="formula-explanation"
+								>Fundamental modes of linear operator. Diagonalization reveals independent evolving
+								directions.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Principal Component Analysis (PCA)</span>
 							<div class="formula-display">
 								<span class="formula-symbol">Cov(X) = U·Λ·U², where Λ = diag(λ_1 ≥ λ_2 ≥ ...)</span>
 							</div>
-							<span class="formula-explanation">Eigenvectors of covariance matrix = principal axes. Eigenvalues = variance along each axis.</span>
+							<span class="formula-explanation"
+								>Eigenvectors of covariance matrix = principal axes. Eigenvalues = variance along
+								each axis.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Singular Value Decomposition (SVD)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">M = U·Σ·V^T, where Σ = diag(σ_1, σ_2, ...), σ_i ≥ 0</span>
+								<span class="formula-symbol"
+									>M = U·Σ·V^T, where Σ = diag(σ_1, σ_2, ...), σ_i ≥ 0</span
+								>
 							</div>
-							<span class="formula-explanation">Low-rank approximation via dominant singular values → compression / dimensionality reduction.</span>
+							<span class="formula-explanation"
+								>Low-rank approximation via dominant singular values → compression / dimensionality
+								reduction.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1238,23 +1531,37 @@
 						<div class="formula-item">
 							<span class="formula-label">Degree Distribution</span>
 							<div class="formula-display">
-								<span class="formula-symbol">P(k) = (probability of node with degree k), mean_k = 2m/n (m=edges, n=nodes)</span>
+								<span class="formula-symbol"
+									>P(k) = (probability of node with degree k), mean_k = 2m/n (m=edges, n=nodes)</span
+								>
 							</div>
-							<span class="formula-explanation">Power-law P(k) ~ k^(-α) → scale-free networks. Indicates optimization or self-organization.</span>
+							<span class="formula-explanation"
+								>Power-law P(k) ~ k^(-α) → scale-free networks. Indicates optimization or
+								self-organization.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Clustering Coefficient (Transitivity)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">C = (# triangles * 3) / (# connected triples), local: C_i = (edges among neighbors) / (max possible)</span>
+								<span class="formula-symbol"
+									>C = (# triangles * 3) / (# connected triples), local: C_i = (edges among
+									neighbors) / (max possible)</span
+								>
 							</div>
-							<span class="formula-explanation">Tendency to form cliques. High clustering → modular / hierarchical structure.</span>
+							<span class="formula-explanation"
+								>Tendency to form cliques. High clustering → modular / hierarchical structure.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Shortest Path (Graph Diameter)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">d(u,v) = min length of path u → v, D = max_u,v d(u,v)</span>
+								<span class="formula-symbol"
+									>d(u,v) = min length of path u → v, D = max_u,v d(u,v)</span
+								>
 							</div>
-							<span class="formula-explanation">Network diameter D. Small-world networks: short paths despite high clustering.</span>
+							<span class="formula-explanation"
+								>Network diameter D. Small-world networks: short paths despite high clustering.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1266,23 +1573,35 @@
 						<div class="formula-item">
 							<span class="formula-label">Markov Chain (Memoryless)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">P(X_(n+1)=j | X_n=i, ..., X_0) = P(X_(n+1)=j | X_n=i) = P_ij</span>
+								<span class="formula-symbol"
+									>P(X_(n+1)=j | X_n=i, ..., X_0) = P(X_(n+1)=j | X_n=i) = P_ij</span
+								>
 							</div>
-							<span class="formula-explanation">Future state depends only on present, not history. Stationary dist: π = π·P (eigenvalue 1 of transition matrix).</span>
+							<span class="formula-explanation"
+								>Future state depends only on present, not history. Stationary dist: π = π·P
+								(eigenvalue 1 of transition matrix).</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Brownian Motion (Wiener Process)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">dX_t = μ·dt + σ·dW_t, where dW_t is Gaussian increment</span>
+								<span class="formula-symbol"
+									>dX_t = μ·dt + σ·dW_t, where dW_t is Gaussian increment</span
+								>
 							</div>
-							<span class="formula-explanation">Continuous random walk. Underlies diffusion and financial modeling. Hurst = 0.5.</span>
+							<span class="formula-explanation"
+								>Continuous random walk. Underlies diffusion and financial modeling. Hurst = 0.5.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Poisson Process (Event Arrivals)</span>
 							<div class="formula-display">
 								<span class="formula-symbol">P(N(t) = n) = (λt)^n * exp(-λt) / n!</span>
 							</div>
-							<span class="formula-explanation">Rare events occurring at constant rate λ. Memoryless inter-arrival times follow Exponential dist.</span>
+							<span class="formula-explanation"
+								>Rare events occurring at constant rate λ. Memoryless inter-arrival times follow
+								Exponential dist.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1296,21 +1615,29 @@
 							<div class="formula-display">
 								<span class="formula-symbol">∂u/∂t = α·∇²u, (Laplacian in space)</span>
 							</div>
-							<span class="formula-explanation">Parabolic PDE describing diffusion / heat spreading. Entropy-increasing: profiles smooth over time.</span>
+							<span class="formula-explanation"
+								>Parabolic PDE describing diffusion / heat spreading. Entropy-increasing: profiles
+								smooth over time.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Wave Equation (Hyperbolic)</span>
 							<div class="formula-display">
 								<span class="formula-symbol">∂²u/∂t² = c²·∇²u, (second-order in time)</span>
 							</div>
-							<span class="formula-explanation">Conservative dynamics: energy preserved. Solutions = traveling / standing waves.</span>
+							<span class="formula-explanation"
+								>Conservative dynamics: energy preserved. Solutions = traveling / standing waves.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Navier-Stokes (Fluid Dynamics)</span>
 							<div class="formula-display">
 								<span class="formula-symbol">ρ(∂v/∂t + (v·∇)v) = -∇p + μ∇²v + f</span>
 							</div>
-							<span class="formula-explanation">Momentum equations for viscous fluids. Nonlinear, turbulence at high Reynolds numbers.</span>
+							<span class="formula-explanation"
+								>Momentum equations for viscous fluids. Nonlinear, turbulence at high Reynolds
+								numbers.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1324,21 +1651,30 @@
 							<div class="formula-display">
 								<span class="formula-symbol">I_ij(θ) = E[(∂ ln L / ∂θ_i) * (∂ ln L / ∂θ_j)]</span>
 							</div>
-							<span class="formula-explanation">Curvature of log-likelihood surface. Inverse = Cramér-Rao lower bound on parameter uncertainty.</span>
+							<span class="formula-explanation"
+								>Curvature of log-likelihood surface. Inverse = Cramér-Rao lower bound on parameter
+								uncertainty.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Kullback-Leibler Divergence (Relative Entropy)</span>
 							<div class="formula-display">
 								<span class="formula-symbol">D_KL(P||Q) = Σ P(x) * ln(P(x)/Q(x))</span>
 							</div>
-							<span class="formula-explanation">Asymmetric measure of distribution distance. Zero iff P = Q; lower = closer to target Q.</span>
+							<span class="formula-explanation"
+								>Asymmetric measure of distribution distance. Zero iff P = Q; lower = closer to
+								target Q.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Mutual Information (Dependence)</span>
 							<div class="formula-display">
 								<span class="formula-symbol">I(X;Y) = Σ p(x,y) * ln(p(x,y) / (p(x)*p(y)))</span>
 							</div>
-							<span class="formula-explanation">Amount of information X contains about Y. Zero iff independent; equals H(X) iff Y=X.</span>
+							<span class="formula-explanation"
+								>Amount of information X contains about Y. Zero iff independent; equals H(X) iff
+								Y=X.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1350,16 +1686,25 @@
 						<div class="formula-item">
 							<span class="formula-label">Functor (Structure-Preserving Map)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">F: C → D, maps objects X_C to F(X_C) ∈ Obj(D), morphisms f to F(f)</span>
+								<span class="formula-symbol"
+									>F: C → D, maps objects X_C to F(X_C) ∈ Obj(D), morphisms f to F(f)</span
+								>
 							</div>
-							<span class="formula-explanation">Higher-level abstraction: maps between mathematical structures themselves.</span>
+							<span class="formula-explanation"
+								>Higher-level abstraction: maps between mathematical structures themselves.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Natural Transformation</span>
 							<div class="formula-display">
-								<span class="formula-symbol">η: F ⇒ G (between functors F,G), comoherent family of morphisms η_X: F(X) → G(X)</span>
+								<span class="formula-symbol"
+									>η: F ⇒ G (between functors F,G), comoherent family of morphisms η_X: F(X) → G(X)</span
+								>
 							</div>
-							<span class="formula-explanation">Structure-preserving map between functors. Unifies many mathematical concepts (universal properties).</span>
+							<span class="formula-explanation"
+								>Structure-preserving map between functors. Unifies many mathematical concepts
+								(universal properties).</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1371,16 +1716,25 @@
 						<div class="formula-item">
 							<span class="formula-label">Probability Measure (Kolmogorov Axioms)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">P: F → [0,1], with P(Ω)=1, P(∅)=0, countable additivity</span>
+								<span class="formula-symbol"
+									>P: F → [0,1], with P(Ω)=1, P(∅)=0, countable additivity</span
+								>
 							</div>
-							<span class="formula-explanation">Foundational axioms of probability. Any probability model must satisfy these three properties.</span>
+							<span class="formula-explanation"
+								>Foundational axioms of probability. Any probability model must satisfy these three
+								properties.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Borel σ-algebra (on ℝ^n)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">σ(open sets) = smallest σ-algebra containing all open intervals</span>
+								<span class="formula-symbol"
+									>σ(open sets) = smallest σ-algebra containing all open intervals</span
+								>
 							</div>
-							<span class="formula-explanation">Enables well-defined Lebesgue measure on continuous spaces; covers "normal" events.</span>
+							<span class="formula-explanation"
+								>Enables well-defined Lebesgue measure on continuous spaces; covers "normal" events.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1392,16 +1746,26 @@
 						<div class="formula-item">
 							<span class="formula-label">U(1) Gauge Symmetry (Electromagnetism)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">ψ(x) → e^(i·α(x))·ψ(x), requires ∂_μ → ∂_μ + ie·A_μ(x)</span>
+								<span class="formula-symbol"
+									>ψ(x) → e^(i·α(x))·ψ(x), requires ∂_μ → ∂_μ + ie·A_μ(x)</span
+								>
 							</div>
-							<span class="formula-explanation">Local phase invariance enforces introduction of gauge field (photon). Symmetry → interaction dynamics.</span>
+							<span class="formula-explanation"
+								>Local phase invariance enforces introduction of gauge field (photon). Symmetry →
+								interaction dynamics.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Yang-Mills Action (Non-Abelian Gauge)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">S = -(1/4g²) ∫ Tr(F_μν²) d^4x, F_μν = ∂_μ A_ν - ∂_ν A_μ + [A_μ, A_ν]</span>
+								<span class="formula-symbol"
+									>S = -(1/4g²) ∫ Tr(F_μν²) d^4x, F_μν = ∂_μ A_ν - ∂_ν A_μ + [A_μ, A_ν]</span
+								>
 							</div>
-							<span class="formula-explanation">Generalization to non-commuting gauge groups (SU(2), SU(3)). Basis for QCD and electroweak theory.</span>
+							<span class="formula-explanation"
+								>Generalization to non-commuting gauge groups (SU(2), SU(3)). Basis for QCD and
+								electroweak theory.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1413,23 +1777,37 @@
 						<div class="formula-item">
 							<span class="formula-label">Gradient Descent (Steepest Descent)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">θ_(n+1) = θ_n - α·∇ L(θ_n), where α = learning rate</span>
+								<span class="formula-symbol"
+									>θ_(n+1) = θ_n - α·∇ L(θ_n), where α = learning rate</span
+								>
 							</div>
-							<span class="formula-explanation">Iterative minimization along negative gradient. Convergence rate depends on curvature (Hessian).</span>
+							<span class="formula-explanation"
+								>Iterative minimization along negative gradient. Convergence rate depends on
+								curvature (Hessian).</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Calculus of Variations (Euler-Lagrange)</span>
 							<div class="formula-display">
-								<span class="formula-symbol">δ ∫ L(y, y', x) dx = 0 ⟹ ∂L/∂y - d/dx(∂L/∂y') = 0</span>
+								<span class="formula-symbol">δ ∫ L(y, y', x) dx = 0 ⟹ ∂L/∂y - d/dx(∂L/∂y') = 0</span
+								>
 							</div>
-							<span class="formula-explanation">Extremal path in function space. Variational principle: nature extremizes action (Hamilton's principle).</span>
+							<span class="formula-explanation"
+								>Extremal path in function space. Variational principle: nature extremizes action
+								(Hamilton's principle).</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Penalty / Constraint Methods</span>
 							<div class="formula-display">
-								<span class="formula-symbol">L_augmented = L(θ) + λ·||g(θ)||² (soft constraints)</span>
+								<span class="formula-symbol"
+									>L_augmented = L(θ) + λ·||g(θ)||² (soft constraints)</span
+								>
 							</div>
-							<span class="formula-explanation">Encode constraints into objective. Trade-off parameter λ controls constraint violation tolerance.</span>
+							<span class="formula-explanation"
+								>Encode constraints into objective. Trade-off parameter λ controls constraint
+								violation tolerance.</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1441,16 +1819,24 @@
 						<div class="formula-item">
 							<span class="formula-label">Weighted Multi-Metric Fusion</span>
 							<div class="formula-display">
-								<span class="formula-symbol">Σ_overall = 0.20·H + 0.15·λ + 0.13·C + 0.12·S + 0.10·Φ + 0.10·T + 0.10·R + 0.10·Ω</span>
+								<span class="formula-symbol"
+									>Σ_overall = 0.20·H + 0.15·λ + 0.13·C + 0.12·S + 0.10·Φ + 0.10·T + 0.10·R + 0.10·Ω</span
+								>
 							</div>
-							<span class="formula-explanation">Balanced weighting across all 8 orthogonal channels. First entry (entropy compression) most critical.</span>
+							<span class="formula-explanation"
+								>Balanced weighting across all 8 orthogonal channels. First entry (entropy
+								compression) most critical.</span
+							>
 						</div>
 						<div class="formula-item">
 							<span class="formula-label">Code Likelihood Estimate</span>
 							<div class="formula-display">
 								<span class="formula-symbol">L_code = clamp(0.92·Σ_overall + 0.08·H, 0, 1)</span>
 							</div>
-							<span class="formula-explanation">Probability that observed pattern reflects information-efficient encoding or hidden constraint layer (vs. pure randomness).</span>
+							<span class="formula-explanation"
+								>Probability that observed pattern reflects information-efficient encoding or hidden
+								constraint layer (vs. pure randomness).</span
+							>
 						</div>
 					</div>
 				</article>
@@ -1465,9 +1851,13 @@
 				<span class="footer-text">Exploring the Platonic Space Hypothesis</span>
 			</div>
 			<div class="footer-links">
-				<a href="https://www.drmichaellevin.org/" target="_blank" rel="noopener">Michael Levin's Lab</a>
+				<a href="https://www.drmichaellevin.org/" target="_blank" rel="noopener"
+					>Michael Levin's Lab</a
+				>
 				<span class="footer-divider">•</span>
-				<button type="button" class="footer-link footer-link-btn" on:click={navigateHome}>Back to Main App</button>
+				<button type="button" class="footer-link footer-link-btn" on:click={navigateHome}
+					>Back to Main App</button
+				>
 			</div>
 		</footer>
 	</div>
@@ -1532,7 +1922,8 @@
 	}
 
 	@keyframes float {
-		0%, 100% {
+		0%,
+		100% {
 			transform: translate(0, 0) scale(1);
 		}
 		25% {
@@ -1553,7 +1944,7 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background-image: 
+		background-image:
 			linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
 			linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
 		background-size: 50px 50px;
@@ -1795,7 +2186,7 @@
 		border-radius: 24px;
 		padding: 1.5rem;
 		backdrop-filter: blur(20px);
-		box-shadow: 
+		box-shadow:
 			0 25px 50px -12px rgba(0, 0, 0, 0.5),
 			0 0 0 1px rgba(255, 255, 255, 0.05) inset,
 			0 0 100px rgba(139, 92, 246, 0.1);
@@ -1826,9 +2217,15 @@
 	}
 
 	@keyframes gradient-rotate {
-		0% { background-position: 0% 50%; }
-		50% { background-position: 100% 50%; }
-		100% { background-position: 0% 50%; }
+		0% {
+			background-position: 0% 50%;
+		}
+		50% {
+			background-position: 100% 50%;
+		}
+		100% {
+			background-position: 0% 50%;
+		}
 	}
 
 	@media (min-width: 768px) {
@@ -2414,7 +2811,9 @@
 		color: #efe9ff;
 		font-weight: 600;
 		cursor: pointer;
-		transition: transform 0.2s ease, border-color 0.2s ease;
+		transition:
+			transform 0.2s ease,
+			border-color 0.2s ease;
 	}
 
 	.probe-btn:hover {
