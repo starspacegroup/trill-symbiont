@@ -1,14 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 
-	const user = $derived(
-		page.data.user as {
-			id: string;
-			username: string;
-			globalName: string | null;
-			avatarUrl: string;
-		} | null
-	);
+	const user = $derived(page.data.user as { id: string; username: string; globalName: string | null; avatarUrl: string } | null);
 </script>
 
 <div class="relative z-50 flex items-center gap-3">

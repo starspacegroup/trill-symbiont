@@ -76,7 +76,7 @@
 		}
 
 		isTouching = true;
-
+		
 		// Start a timer for long press (500ms)
 		touchStartTimer = window.setTimeout(() => {
 			if (isTouching) {
@@ -84,11 +84,11 @@
 				if (navigator.vibrate) {
 					navigator.vibrate(50);
 				}
-
+				
 				// Simulate drag start for touch
 				isDragging = true;
 				dispatch('dragstart');
-
+				
 				// Prevent default to avoid text selection
 				event.preventDefault();
 			}
@@ -102,10 +102,10 @@
 
 		// Prevent default scrolling while dragging
 		event.preventDefault();
-
+		
 		const touch = event.touches[0];
 		const touchY = touch.clientY;
-
+		
 		// Handle auto-scrolling near viewport edges
 		const viewportHeight = window.innerHeight;
 		const distanceFromTop = touchY;
@@ -121,7 +121,7 @@
 		if (distanceFromTop < SCROLL_THRESHOLD || distanceFromBottom < SCROLL_THRESHOLD) {
 			autoScroll(distanceFromTop, distanceFromBottom);
 		}
-
+		
 		// Find the column under the touch point
 		const elementAtPoint = document.elementFromPoint(touch.clientX, touch.clientY);
 		if (elementAtPoint) {
@@ -141,25 +141,22 @@
 
 		if (distanceFromTop < SCROLL_THRESHOLD) {
 			// Scroll up - speed increases as we get closer to top
-			const intensity = 1 - distanceFromTop / SCROLL_THRESHOLD;
+			const intensity = 1 - (distanceFromTop / SCROLL_THRESHOLD);
 			scrollSpeed = -intensity * MAX_SCROLL_SPEED;
 		} else if (distanceFromBottom < SCROLL_THRESHOLD) {
 			// Scroll down - speed increases as we get closer to bottom
-			const intensity = 1 - distanceFromBottom / SCROLL_THRESHOLD;
+			const intensity = 1 - (distanceFromBottom / SCROLL_THRESHOLD);
 			scrollSpeed = intensity * MAX_SCROLL_SPEED;
 		}
 
 		if (scrollSpeed !== 0) {
 			window.scrollBy(0, scrollSpeed);
-
+			
 			// Continue auto-scrolling
 			autoScrollTimer = requestAnimationFrame(() => {
 				if (isDragging && isTouching) {
 					// Get current touch position (we need to maintain it)
-					const currentTouch = document.elementFromPoint(
-						window.innerWidth / 2,
-						window.innerHeight / 2
-					);
+					const currentTouch = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
 					if (currentTouch) {
 						autoScroll(distanceFromTop, distanceFromBottom);
 					}
@@ -185,7 +182,7 @@
 			// Get the final touch position
 			const touch = event.changedTouches[0];
 			const elementAtPoint = document.elementFromPoint(touch.clientX, touch.clientY);
-
+			
 			if (elementAtPoint) {
 				const column = elementAtPoint.closest('.widget-column');
 				if (column) {
@@ -237,9 +234,9 @@
 	aria-label={title}
 >
 	<div class="widget-header">
-		<span
+		<span 
 			bind:this={dragHandleElement}
-			class="drag-handle"
+			class="drag-handle" 
 			class:touching={isTouching && !isDragging}
 			draggable="true"
 			on:dragstart={handleDragStart}
@@ -250,13 +247,13 @@
 			on:touchcancel={handleTouchCancel}
 			title="Drag to move widget"
 			role="button"
-			tabindex="0">⠿</span
-		>
+			tabindex="0"
+		>⠿</span>
 		<h3 class="widget-title">{title}</h3>
-		<button
-			class="collapse-button"
+		<button 
+			class="collapse-button" 
 			class:collapsed={isCollapsed}
-			on:click={toggleCollapse}
+			on:click={toggleCollapse} 
 			aria-label={isCollapsed ? 'Expand widget' : 'Collapse widget'}
 		>
 			▼

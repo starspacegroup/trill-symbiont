@@ -40,11 +40,11 @@
 
 	// Sequence state (each drum has an array of active steps)
 	let sequence: boolean[][] = drums.map(() => Array(steps).fill(false));
-
+	
 	// Mute state for each drum
 	let drumMutes: boolean[] = drums.map(() => false);
 	let masterMute = false;
-
+	
 	// Playback state
 	let isPlaying = false;
 	let currentStep = -1;
@@ -85,14 +85,14 @@
 		event.preventDefault();
 		isDragging = true;
 		dragDrumIndex = drumIndex;
-
+		
 		// Left click/drag enables, right click/drag disables
 		if (event.button === 0) {
 			dragState = true;
 		} else if (event.button === 2) {
 			dragState = false;
 		}
-
+		
 		// Apply to the initial step
 		if (dragState !== null) {
 			sequence[drumIndex][stepIndex] = dragState;
@@ -120,7 +120,7 @@
 
 	function fillPattern(drumIndex: number, interval: number) {
 		for (let i = 0; i < steps; i++) {
-			sequence[drumIndex][i] = i % interval === 0;
+			sequence[drumIndex][i] = (i % interval === 0);
 		}
 		sequence = sequence;
 	}
@@ -130,14 +130,14 @@
 
 		const drum = drums[drumIndex];
 		const now = audioContext.currentTime;
-
+		
 		// Create oscillator for the drum sound
 		const osc = audioContext.createOscillator();
 		const gain = audioContext.createGain();
-
+		
 		osc.connect(gain);
 		gain.connect(audioContext.destination);
-
+		
 		if (drumIndex === 0) {
 			// Kick: Low frequency with quick pitch drop
 			osc.type = 'sine';
@@ -164,7 +164,7 @@
 			gain.gain.setValueAtTime(0.4, now);
 			gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
 		}
-
+		
 		osc.start(now);
 		osc.stop(now + 0.5);
 	}
@@ -173,12 +173,12 @@
 		if (intervalId !== null) {
 			clearInterval(intervalId);
 		}
-
-		const stepTime = ((60 / effectiveTempo) * 1000) / 4; // 16th notes
-
+		
+		const stepTime = (60 / effectiveTempo) * 1000 / 4; // 16th notes
+		
 		intervalId = window.setInterval(() => {
 			currentStep = (currentStep + 1) % steps;
-
+			
 			// Play all active drums at this step (respect mute states)
 			if (!masterMute) {
 				drums.forEach((_, drumIndex) => {
@@ -198,7 +198,7 @@
 
 	function play() {
 		if (isPlaying) return;
-
+		
 		isPlaying = true;
 		currentStep = -1;
 		startInterval();
@@ -250,7 +250,7 @@
 		<div class="controls-top">
 			<h3 class="text-base sm:text-lg lg:text-xl">Drum Sequencer</h3>
 			<div class="buttons">
-				<button
+				<button 
 					on:click={isPlaying ? stop : play}
 					disabled={isTiedToSitePlayback}
 					class:disabled={isTiedToSitePlayback}
@@ -258,7 +258,7 @@
 				>
 					{isPlaying ? '⏸ Stop' : '▶ Play'}
 				</button>
-				<button
+				<button 
 					class="mute-button text-xs sm:text-sm"
 					class:muted={masterMute}
 					on:click={toggleMasterMute}
@@ -270,22 +270,21 @@
 			</div>
 		</div>
 		<div class="tempo-controls">
-			<button
-				class="tempo-tie-button text-xs sm:text-sm"
+			<button 
+				class="tempo-tie-button text-xs sm:text-sm" 
 				class:tied={isTiedToSitePlayback}
 				on:click={togglePlaybackTie}
 				title={isTiedToSitePlayback ? 'Untie from site playback' : 'Tie to site playback'}
 			>
 				{isTiedToSitePlayback ? '🔗' : '🔓'} <span class="hidden sm:inline">Playback</span>
 			</button>
-			<button
-				class="tempo-tie-button text-xs sm:text-sm"
+			<button 
+				class="tempo-tie-button text-xs sm:text-sm" 
 				class:tied={isTiedToSiteTempo}
 				on:click={toggleTempoTie}
 				title={isTiedToSiteTempo ? 'Untie from site tempo' : 'Tie to site tempo'}
 			>
-				{isTiedToSiteTempo ? '🔗' : '🔓'} <span class="hidden sm:inline">Tempo:</span>
-				{effectiveTempo} BPM
+				{isTiedToSiteTempo ? '🔗' : '🔓'} <span class="hidden sm:inline">Tempo:</span> {effectiveTempo} BPM
 			</button>
 			{#if !isTiedToSiteTempo}
 				<input
@@ -304,7 +303,7 @@
 		{#each drums as drum, drumIndex}
 			<div class="drum-row">
 				<div class="drum-label text-xs sm:text-sm">{drum.name}</div>
-				<button
+				<button 
 					class="drum-mute-button text-xs sm:text-sm"
 					class:muted={drumMutes[drumIndex]}
 					on:click={() => toggleDrumMute(drumIndex)}
@@ -313,7 +312,7 @@
 				>
 					{drumMutes[drumIndex] ? '🔇' : '🔊'}
 				</button>
-				<select
+				<select 
 					class="fill-select text-xs sm:text-sm"
 					on:change={(e) => fillPattern(drumIndex, parseInt(e.currentTarget.value))}
 					aria-label="Fill pattern for {drum.name}"

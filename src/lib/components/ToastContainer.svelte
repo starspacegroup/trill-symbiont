@@ -19,9 +19,7 @@
 <div class="pointer-events-none fixed right-4 bottom-4 z-[100] flex flex-col gap-2">
 	{#each getToasts() as toast (toast.id)}
 		<div
-			class="pointer-events-auto flex max-w-[400px] min-w-[280px] items-center gap-3 rounded-lg border px-4 py-3 shadow-xl backdrop-blur-sm transition-all duration-300 {typeStyles[
-				toast.type
-			] ?? typeStyles.info}"
+			class="pointer-events-auto flex min-w-[280px] max-w-[400px] items-center gap-3 rounded-lg border px-4 py-3 shadow-xl backdrop-blur-sm transition-all duration-300 {typeStyles[toast.type] ?? typeStyles.info}"
 			role="alert"
 		>
 			<span class="text-lg">{typeIcons[toast.type] ?? 'ℹ️'}</span>
