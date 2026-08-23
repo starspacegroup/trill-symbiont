@@ -84,6 +84,9 @@
 
 	const waveTypes: OscillatorType[] = ['sine', 'triangle', 'square', 'sawtooth'];
 
+	// Column indices for the 8-wide grid's each-blocks (avoids an unused item binding)
+	const columnIndices = Array.from({ length: 8 }, (_, i) => i);
+
 	$: if (masterGain && audioContext) {
 		masterGain.gain.setValueAtTime(1 * masterVolume, audioContext.currentTime);
 	}
@@ -188,7 +191,12 @@
 				} catch {
 					// Oscillator already stopped
 				}
-				// Clean up the audio node but keep the square active
+				// Clean up the audio node but keep the square active.
+				// This index-assignment doesn't reassign `audioNodes` itself, so it
+				// doesn't retrigger Svelte's reactivity, and it only runs once this
+				// setTimeout fires (well after the reactive block below has settled) —
+				// no infinite loop.
+				// eslint-disable-next-line svelte/infinite-reactive-loop
 				audioNodes[index] = null;
 			},
 			(attackTime + maxDecay) * 1000
@@ -201,46 +209,6 @@
 			squareGain,
 			decayTimeoutId
 		};
-	}
-
-	function stopAmbientSound(
-		components: {
-			primaryOsc: OscillatorNode;
-			lfo: OscillatorNode;
-			lfoGain: GainNode;
-			squareGain: GainNode;
-		} | null,
-		index: number
-	) {
-		if (!components || !audioContext) return;
-
-		const decayTime = oscillatorControls[index]?.primaryDecay || 0.5;
-		const lfoDecayTime = oscillatorControls[index]?.lfoDecay || 0.5;
-
-		// Apply decay envelope to primary oscillator
-		const currentGain = components.squareGain.gain.value;
-		components.squareGain.gain.cancelScheduledValues(audioContext.currentTime);
-		components.squareGain.gain.setValueAtTime(currentGain, audioContext.currentTime);
-		components.squareGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + decayTime);
-
-		// Apply decay envelope to LFO
-		const currentLfoGain = components.lfoGain.gain.value;
-		components.lfoGain.gain.cancelScheduledValues(audioContext.currentTime);
-		components.lfoGain.gain.setValueAtTime(currentLfoGain, audioContext.currentTime);
-		components.lfoGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + lfoDecayTime);
-
-		const maxDecay = Math.max(decayTime, lfoDecayTime);
-		setTimeout(() => {
-			try {
-				components.primaryOsc.stop();
-				components.lfo.stop();
-				// Clean up the audio node reference after stopping
-				audioNodes[index] = null;
-			} catch {
-				// Oscillator already stopped
-				audioNodes[index] = null;
-			}
-		}, maxDecay * 1000);
 	}
 
 	async function toggleSquare(index: number) {
@@ -810,8 +778,11 @@
 				// Mark this square as triggered for visual animation
 				triggeredSquares[index] = true;
 
-				// If there's no active audio node, re-trigger the sound
+				// If there's no active audio node, re-trigger the sound.
+				// Same as above: an index-assignment to `audioNodes`, never a
+				// wholesale reassignment, so it can't re-invalidate this block.
 				if (!audioNodes[index]) {
+					// eslint-disable-next-line svelte/infinite-reactive-loop
 					audioNodes[index] = createAmbientSound(index);
 				} else {
 					// If there is an active audio node, boost it momentarily
@@ -925,7 +896,7 @@
 		<div class="mb-2 flex items-center">
 			<div class="w-20 sm:w-24 lg:w-32"></div>
 			<div class="grid flex-1 grid-cols-8 gap-1 sm:gap-2">
-				{#each Array(8) as _, colIndex}
+				{#each columnIndices as colIndex (colIndex)}
 					<div
 						class="text-center text-[0.625rem] font-bold transition-all duration-200 sm:text-xs {currentSequenceStep >=
 							0 && colIndex === currentSequenceStep
@@ -948,7 +919,7 @@
 							{row.name}
 						</div>
 						<div class="grid flex-1 grid-cols-8 gap-1 sm:gap-2">
-							{#each Array(8) as _, colIndex}
+							{#each columnIndices as colIndex (colIndex)}
 								{@const index = rowIndex * 8 + colIndex}
 								{@const currentFreq = getCurrentFrequency(index)}
 								{@const hue = frequencyToHue(currentFreq)}
@@ -1021,7 +992,7 @@
 							>{currentChord}</span
 						>
 						<div class="flex flex-wrap justify-center gap-1 sm:gap-2">
-							{#each getCurrentChordFrequencies() as freq}
+							{#each getCurrentChordFrequencies() as freq (freq)}
 								<span class="rounded bg-gray-700 px-1.5 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm"
 									>{freq.toFixed(1)}Hz</span
 								>
@@ -1197,7 +1168,7 @@
 									updateDefaultSetting('primaryWave', e.currentTarget.value as OscillatorType)}
 								class="w-full rounded border border-gray-500 bg-gray-600 px-2 py-1 text-sm text-white"
 							>
-								{#each waveTypes as waveType}
+								{#each waveTypes as waveType (waveType)}
 									<option value={waveType}>{waveType}</option>
 								{/each}
 							</select>
@@ -1314,7 +1285,7 @@
 									updateDefaultSetting('lfoWave', e.currentTarget.value as OscillatorType)}
 								class="w-full rounded border border-gray-500 bg-gray-600 px-2 py-1 text-sm text-white"
 							>
-								{#each waveTypes as waveType}
+								{#each waveTypes as waveType (waveType)}
 									<option value={waveType}>{waveType}</option>
 								{/each}
 							</select>
@@ -1383,7 +1354,7 @@
 			<h3 class="mb-3 text-center text-lg font-bold text-white">Per-Square Controls</h3>
 
 			<div class="control-grid grid gap-3">
-				{#each activeSquares as isActive, index}
+				{#each activeSquares as isActive, index (index)}
 					{#if isActive}
 						<div
 							class="control-module rounded-lg border border-gray-600 bg-gray-700 transition-all duration-300"
@@ -1585,7 +1556,7 @@
 													)}
 												class="w-full rounded border border-gray-500 bg-gray-600 px-1 py-0.5 text-xs text-white"
 											>
-												{#each waveTypes as waveType}
+												{#each waveTypes as waveType (waveType)}
 													<option value={waveType}>{waveType.substring(0, 3)}</option>
 												{/each}
 											</select>
@@ -1720,7 +1691,7 @@
 													)}
 												class="w-full rounded border border-gray-500 bg-gray-600 px-1 py-0.5 text-xs text-white"
 											>
-												{#each waveTypes as waveType}
+												{#each waveTypes as waveType (waveType)}
 													<option value={waveType}>{waveType.substring(0, 3)}</option>
 												{/each}
 											</select>

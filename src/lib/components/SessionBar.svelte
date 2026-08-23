@@ -3,6 +3,8 @@
 	import { addToast } from '$lib/stores/toastStore.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import type { Pathname } from '$app/types';
 
 	type SharedSession = {
 		id: string;
@@ -51,14 +53,20 @@
 		// Update URL without full reload
 		const url = new URL(window.location.href);
 		url.searchParams.set('session', sessionId);
-		goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+		goto(resolve(`${url.pathname}${url.search}` as Pathname), {
+			replaceState: true,
+			noScroll: true
+		});
 	}
 
 	async function leaveSession() {
 		await sessionSync.leave();
 		const url = new URL(window.location.href);
 		url.searchParams.delete('session');
-		goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+		goto(resolve(`${url.pathname}${url.search}` as Pathname), {
+			replaceState: true,
+			noScroll: true
+		});
 	}
 
 	async function joinByCode() {
@@ -149,7 +157,7 @@
 				<!-- Member avatars -->
 				{#if sessionSync.members.length > 0}
 					<div class="ml-2 flex -space-x-2">
-						{#each sessionSync.members.slice(0, 5) as member}
+						{#each sessionSync.members.slice(0, 5) as member (member.userId)}
 							<div
 								class="h-6 w-6 overflow-hidden rounded-full border-2 border-gray-800 bg-gray-600"
 								title={member.username}
@@ -202,7 +210,6 @@
 
 		<!-- Dropdown -->
 		{#if expanded}
-			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 			<div class="session-dropdown" role="menu" tabindex="-1" onclick={(e) => e.stopPropagation()}>
 				<h3 class="mb-3 text-sm font-semibold text-white">Sessions</h3>
 

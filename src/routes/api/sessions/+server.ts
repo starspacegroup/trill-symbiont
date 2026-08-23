@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/server/db';
-import { sharedSessions, sessionPresence } from '$lib/server/db/schema';
+import { sharedSessions } from '$lib/server/db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 import { encodeBase64url } from '@oslojs/encoding';
 

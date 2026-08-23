@@ -22,6 +22,8 @@
 	let camera = $state<THREE.PerspectiveCamera>();
 	let renderer: THREE.WebGLRenderer;
 	let world: CANNON.World;
+	let groundMaterial: CANNON.Material;
+	let objectMaterial: CANNON.Material;
 	let animationId: number;
 	let controls = $state<OrbitControls>();
 
@@ -61,7 +63,6 @@
 	// Audio - Web Audio API
 	let audioContext: AudioContext | null = null;
 	let masterGain: GainNode | null = null;
-	let collisionSounds = new Set<string>();
 
 	// Constants
 	const EMIT_INTERVAL = 1500; // ms
@@ -94,6 +95,10 @@
 		renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.setSize(container.clientWidth, container.clientHeight);
 		renderer.setPixelRatio(window.devicePixelRatio);
+		// Three.js owns and creates the canvas (renderer.domElement) itself, outside
+		// Svelte's template, so mounting it into the bound container is necessarily
+		// direct DOM manipulation — there's no declarative Svelte equivalent here.
+		// eslint-disable-next-line svelte/no-dom-manipulating
 		container.appendChild(renderer.domElement);
 
 		// Camera controls
@@ -137,8 +142,8 @@
 		world.defaultContactMaterial.frictionEquationRelaxation = 4;
 
 		// Create physics materials
-		const groundMaterial = new CANNON.Material('ground');
-		const objectMaterial = new CANNON.Material('object');
+		groundMaterial = new CANNON.Material('ground');
+		objectMaterial = new CANNON.Material('object');
 
 		// Create contact material with MAXIMUM stiffness to ABSOLUTELY prevent tunneling
 		const contactMaterial = new CANNON.ContactMaterial(groundMaterial, objectMaterial, {
@@ -164,9 +169,7 @@
 		});
 		world.addContactMaterial(objectContact);
 
-		// Store materials for later use
-		(world as any).groundMaterial = groundMaterial;
-		(world as any).objectMaterial = objectMaterial; // Create hill
+		// Create hill
 		createHill();
 
 		// Create legend helpers
@@ -210,7 +213,6 @@
 				// CANYON: Carve a massive canyon starting near camera and extending into distance
 				// Canyon runs along z-axis (perpendicular to camera view, going into distance)
 				// Positioned slightly right of center
-				const canyonCenterZ = zWorld; // Canyon extends along entire z-axis
 				const canyonCenterX = xWorld - 0.1; // Slightly right of center (positive x)
 				const distanceFromCanyonCenter = Math.abs(canyonCenterX);
 
@@ -384,7 +386,7 @@
 
 		hillBody = new CANNON.Body({
 			mass: 0,
-			material: (world as any).groundMaterial,
+			material: groundMaterial,
 			type: CANNON.Body.STATIC
 		});
 		hillBody.addShape(trimeshShape);
@@ -591,7 +593,7 @@
 			// CRITICAL: Lower damping allows physics solver to work better
 			linearDamping: 0.1,
 			angularDamping: 0.1,
-			material: (world as any).objectMaterial,
+			material: objectMaterial,
 			type: CANNON.Body.DYNAMIC,
 			// CRITICAL: Enable CCD (Continuous Collision Detection) to prevent tunneling
 			collisionResponse: true,
@@ -605,9 +607,6 @@
 			6 + Math.random() * 2, // Up (positive Y)
 			4 + Math.random() * 2 // Away (positive Z)
 		);
-
-		// CRITICAL: Store creation time for fall-through detection
-		(body as any).creationTime = Date.now();
 
 		// Add collision listener to this body
 		body.addEventListener('collide', handleCollision);
@@ -626,7 +625,9 @@
 		meshes.push(mesh);
 	}
 
-	function handleCollision(event: any) {
+	// cannon-es types its event listeners as plain `Function` (no payload type
+	// exported), so 'collide' events are typed locally from the two fields used.
+	function handleCollision(event: { body: CANNON.Body; target: CANNON.Body }) {
 		if (isMuted || !audioContext || !masterGain) return;
 
 		// event.body is what the object collided with
@@ -687,7 +688,10 @@
 		// Envelope settings
 		const attackTime = 0.05;
 		const decayTime = 0.5;
-		const lfoDecayTime = 0.5;
+		// NOTE: unlike MusicGrid.svelte's createAmbientSound (same LFO-vibrato pattern),
+		// lfoGain.gain is set to 0 above and never ramped up/down here, so the LFO
+		// currently has no audible effect on collision sounds. Left as-is pending a
+		// decision on whether that's intentional; flag before wiring up an lfoDecayTime.
 
 		// Apply attack envelope to primary oscillator
 		soundGain.gain.setValueAtTime(0, audioContext.currentTime);
@@ -803,8 +807,8 @@
 		// Always sync meshes with physics bodies (for rendering)
 		meshes.forEach((mesh, index) => {
 			if (bodies[index]) {
-				mesh.position.copy(bodies[index].position as any);
-				mesh.quaternion.copy(bodies[index].quaternion as any);
+				mesh.position.copy(bodies[index].position);
+				mesh.quaternion.copy(bodies[index].quaternion);
 			}
 		});
 
@@ -895,6 +899,8 @@
 		}
 		if (renderer) {
 			renderer.dispose();
+			// Symmetric with the direct appendChild in initScene() above.
+			// eslint-disable-next-line svelte/no-dom-manipulating
 			container?.removeChild(renderer.domElement);
 		} // Cleanup physics
 		bodies.forEach((body) => world.removeBody(body));

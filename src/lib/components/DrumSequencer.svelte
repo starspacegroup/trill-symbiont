@@ -41,6 +41,9 @@
 	// Sequence state (each drum has an array of active steps)
 	let sequence: boolean[][] = drums.map(() => Array(steps).fill(false));
 
+	// Step indices for the template's each-block (avoids an unused item binding)
+	$: stepIndices = Array.from({ length: steps }, (_, i) => i);
+
 	// Mute state for each drum
 	let drumMutes: boolean[] = drums.map(() => false);
 	let masterMute = false;
@@ -57,8 +60,11 @@
 	let dragDrumIndex: number | null = null; // which drum row we're dragging in
 
 	onMount(() => {
-		// Initialize audio context
-		audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+		// Initialize audio context (Safari still needs the vendor-prefixed constructor)
+		const AudioContextCtor =
+			window.AudioContext ||
+			(window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+		audioContext = new AudioContextCtor();
 	});
 
 	onDestroy(() => {
@@ -301,7 +307,7 @@
 	</div>
 
 	<div class="sequence-grid">
-		{#each drums as drum, drumIndex}
+		{#each drums as drum, drumIndex (drum.name)}
 			<div class="drum-row">
 				<div class="drum-label text-xs sm:text-sm">{drum.name}</div>
 				<button
@@ -325,7 +331,7 @@
 					<option value="8">8</option>
 				</select>
 				<div class="steps">
-					{#each Array(steps) as _, stepIndex}
+					{#each stepIndices as stepIndex (stepIndex)}
 						<button
 							class="step"
 							class:active={sequence[drumIndex][stepIndex]}

@@ -4,8 +4,6 @@
 	// Mathematical constants from the Platonic Space
 	const E = Math.E; // 2.71828...
 	const PHI = (1 + Math.sqrt(5)) / 2; // Golden ratio 1.618...
-	const PI = Math.PI;
-	const FEIGENBAUM = 4.669201609; // Feigenbaum constant
 
 	// Prime numbers - the cicada pattern (13, 17 years)
 	const PRIMES = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71];
@@ -17,7 +15,6 @@
 	let ctx: CanvasRenderingContext2D;
 	let animationId: number;
 	let time = 0;
-	let mounted = false;
 
 	// Interface types - different "thin clients" to the Platonic Space
 	type InterfaceType = 'mathematics' | 'biology' | 'mind' | 'physics' | 'computation';
@@ -175,8 +172,8 @@
 		}
 
 		// Draw the floating Platonic objects
-		platonicObjects.forEach((obj, i) => {
-			drawPlatonicObject(obj, w, h, i);
+		platonicObjects.forEach((obj) => {
+			drawPlatonicObject(obj, w, h);
 		});
 
 		// Draw the interface at the bottom
@@ -214,7 +211,7 @@
 		ctx.globalAlpha = 1;
 	}
 
-	function drawPlatonicObject(obj: PlatonicObject, w: number, h: number, index: number) {
+	function drawPlatonicObject(obj: PlatonicObject, w: number, h: number) {
 		const pulse = Math.sin(time * 2 + obj.pulsePhase) * 0.3 + 0.7;
 		const x = obj.x * w + Math.sin(time * 0.5 + obj.angle) * 20 * obj.z;
 		const y = obj.y * h * 0.7 + Math.cos(time * 0.3 + obj.angle) * 15 * obj.z;
@@ -296,7 +293,7 @@
 				ctx.stroke();
 				break;
 
-			case 'symmetry':
+			case 'symmetry': {
 				// Draw symmetry pattern (polygon)
 				const sides = obj.value;
 				ctx.beginPath();
@@ -308,6 +305,7 @@
 				}
 				ctx.stroke();
 				break;
+			}
 		}
 
 		ctx.restore();
@@ -481,7 +479,6 @@
 			window.addEventListener('resize', resizeCanvas);
 
 			initPlatonicSpace();
-			mounted = true;
 			animate();
 
 			return () => {
@@ -539,7 +536,7 @@
 	<div class="interface-selector">
 		<div class="selector-label">Choose Your Interface (Thin Client)</div>
 		<div class="interface-buttons">
-			{#each Object.entries(patternManifestations) as [type, info]}
+			{#each Object.entries(patternManifestations) as [type, info] (type)}
 				<button
 					class="interface-btn"
 					class:active={selectedInterface === type}
@@ -573,7 +570,7 @@
 	<div class="patterns-feed">
 		<div class="feed-label">Patterns Ingressing Through Interface:</div>
 		<div class="feed-items">
-			{#each activePatterns as pattern (pattern + Math.random())}
+			{#each activePatterns as pattern (pattern)}
 				<span
 					class="feed-item"
 					class:fade={activePatterns.indexOf(pattern) < activePatterns.length - 3}

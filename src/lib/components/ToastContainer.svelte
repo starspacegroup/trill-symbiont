@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getToasts, removeToast, type Toast } from '$lib/stores/toastStore.svelte';
+	import { getToasts, removeToast } from '$lib/stores/toastStore.svelte';
 
 	const typeStyles: Record<string, string> = {
 		info: 'bg-blue-600/90 border-blue-400',

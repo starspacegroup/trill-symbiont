@@ -186,17 +186,6 @@
 		});
 	}
 
-	// Handle chord selection
-	function selectChord(chord: string) {
-		selectedChord = chord;
-		dispatch('chordChange', {
-			key: selectedKey,
-			scale: selectedScale,
-			chord,
-			chordFrequencies: getChordFrequencies()
-		});
-	}
-
 	// Get position for circle of fifths visualization
 	function getKeyPosition(key: string, index: number): { x: number; y: number } {
 		const angle = index * 30 * (Math.PI / 180); // 30 degrees apart
@@ -229,7 +218,7 @@
 				bind:value={selectedScale}
 				on:change={() => selectScale(selectedScale)}
 			>
-				{#each Object.keys(SCALE_PATTERNS) as scale}
+				{#each Object.keys(SCALE_PATTERNS) as scale (scale)}
 					<option value={scale}>{scale.charAt(0).toUpperCase() + scale.slice(1)}</option>
 				{/each}
 			</select>
@@ -253,7 +242,7 @@
 			/>
 
 			<!-- Key positions -->
-			{#each CIRCLE_OF_FIFTHS as key, index}
+			{#each CIRCLE_OF_FIFTHS as key, index (key)}
 				{@const position = getKeyPosition(key, index)}
 				{@const isSelected = key === selectedKey}
 				{@const isHovered = key === hoveredKey}
@@ -298,7 +287,7 @@
 				<!-- Scale degree numbers -->
 				{#if showScaleDegrees && key === selectedKey}
 					{@const scale = generateScale(key, selectedScale)}
-					{#each scale as note, noteIndex}
+					{#each scale as note, noteIndex (note)}
 						{@const notePosition = getKeyPosition(note, CIRCLE_OF_FIFTHS.indexOf(note as Note))}
 						<text
 							x={notePosition.x + 25}
@@ -336,7 +325,7 @@
 		<div class="scale-display">
 			<h4>Scale Notes:</h4>
 			<div class="scale-notes">
-				{#each generateScale(selectedKey, selectedScale) as note, index}
+				{#each generateScale(selectedKey, selectedScale) as note, index (note)}
 					<span class="scale-note" class:tonic={index === 0}>
 						{getNoteName(note, selectedKey)}
 						{#if showScaleDegrees}
@@ -351,7 +340,7 @@
 			<div class="chord-display">
 				<h4>Current Chord: {selectedChord}</h4>
 				<div class="chord-notes">
-					{#each getChordFrequencies() as freq}
+					{#each getChordFrequencies() as freq (freq)}
 						<span class="chord-note">{freq.toFixed(1)} Hz</span>
 					{/each}
 				</div>

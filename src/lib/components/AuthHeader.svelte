@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
 
 	const user = $derived(
 		page.data.user as {
@@ -34,7 +35,7 @@
 		</form>
 	{:else}
 		<a
-			href="/auth/discord"
+			href={resolve('/auth/discord')}
 			class="flex items-center gap-2 rounded-md bg-[#5865F2] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#4752C4]"
 		>
 			<svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">

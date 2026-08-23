@@ -14,7 +14,6 @@
 	let selectedChord = 'I';
 	let scaleFrequencies: number[] = [];
 	let isSynchronized = true; // Always synchronized - no free mode
-	let showCircleOfFifths = false; // Collapsed by default
 	let masterVolume = 1.0; // Master volume control (max by default)
 	let tempo = 99; // BPM (beats per minute) for sequencer
 	let isSequencerRunning = false;
@@ -245,7 +244,10 @@
 
 	// Ensure all widgets are visible in the current layout
 	function ensureAllWidgetsVisible() {
-		// Collect all currently placed widgets
+		// Collect all currently placed widgets. Purely local scratch state built
+		// and consumed within this function — never read reactively — so a plain
+		// Set is correct here; SvelteSet would just add tracking overhead.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const placedWidgets = new Set<WidgetId>();
 		for (const columnId of activeColumnIds) {
 			if (columns[columnId]) {
@@ -351,10 +353,6 @@
 	}
 
 	// Render a widget based on its ID
-	function renderWidget(widgetId: WidgetId, columnId: ColumnId) {
-		return { widgetId, columnId };
-	}
-
 	function handleDragStart(widgetId: WidgetId, columnId: ColumnId) {
 		draggedWidget = widgetId;
 		draggedFromColumn = columnId;
@@ -466,7 +464,6 @@
 	}
 
 	function handleTouchDrop(event: CustomEvent) {
-		const { clientY } = event.detail;
 		const columnElement = event.target as HTMLElement;
 		const columnId = columnElement
 			.getAttribute('aria-label')
@@ -514,10 +511,6 @@
 	function handleChordChange(event: CustomEvent) {
 		selectedChord = event.detail.chord;
 		syncToSession({ selectedChord });
-	}
-
-	function toggleCircleOfFifths() {
-		showCircleOfFifths = !showCircleOfFifths;
 	}
 
 	// Sequencer control functions
@@ -608,7 +601,7 @@
 					<div class="mt-4 rounded-lg bg-gray-800 p-4 shadow-lg">
 						<h3 class="mb-3 text-lg font-semibold">Grid Layout Presets</h3>
 						<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-							{#each layoutPresets as preset}
+							{#each layoutPresets as preset (preset.name)}
 								<button
 									on:click={() => applyLayoutPreset(preset)}
 									class="rounded-lg border-2 p-3 text-left transition-all hover:scale-105 {JSON.stringify(
@@ -626,12 +619,12 @@
 												: Math.max(...preset.columns)}; --icon-rows: {preset.rows};"
 										>
 											{#if typeof preset.columns === 'number'}
-												{#each Array(preset.columns * preset.rows) as _, i}
+												{#each Array.from({ length: preset.columns * preset.rows }, (_, i) => i) as i (i)}
 													<div class="grid-icon-cell"></div>
 												{/each}
 											{:else}
-												{#each preset.columns as rowCols, rowIndex}
-													{#each Array(rowCols) as _, colIndex}
+												{#each preset.columns as rowCols, rowIndex (rowIndex)}
+													{#each Array.from({ length: rowCols }, (_, colIndex) => colIndex) as colIndex (colIndex)}
 														<div
 															class="grid-icon-cell variable-grid"
 															style="grid-column: span {Math.max(...preset.columns) / rowCols};"

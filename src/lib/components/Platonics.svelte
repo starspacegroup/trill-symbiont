@@ -78,7 +78,6 @@
 		step(pt: number): boolean {
 			const newGrid = new Uint8Array(this.size);
 			let converged = true;
-			let changedCount = 0;
 
 			for (let y = 0; y < this.height; y++) {
 				for (let x = 0; x < this.width; x++) {
@@ -110,7 +109,6 @@
 					newGrid[idx] = newState;
 					if (newState !== this.grid[idx]) {
 						converged = false;
-						changedCount++;
 					}
 					// Update history for trails
 					this.history[idx] = Math.min(255, this.history[idx] + (this.grid[idx] ? 50 : 0));
@@ -195,7 +193,6 @@
 					}
 					newGrid[idx] = newState;
 					if (newState !== this.grid[idx]) converged = false;
-					for (let _ = 0; _ < 5; _++) {}
 				}
 			}
 			this.grid = newGrid;
@@ -370,7 +367,7 @@
 <div class="platonic-container">
 	<!-- Animated background particles -->
 	<div class="particles">
-		{#each Array(20) as _, i}
+		{#each Array.from({ length: 20 }, (_, n) => n) as i (i)}
 			<div
 				class="particle"
 				style="--delay: {i * 0.5}s; --x: {Math.random() * 100}%; --duration: {10 +
@@ -415,7 +412,7 @@
 	<div class="pattern-selector">
 		<div class="pattern-title">Select Pattern Algorithm</div>
 		<div class="pattern-buttons">
-			{#each Object.entries(patternDescriptions) as [value, info]}
+			{#each Object.entries(patternDescriptions) as [value, info] (value)}
 				<button
 					class="pattern-btn"
 					class:active={patternType === Number(value)}
@@ -457,7 +454,7 @@
 	<div class="color-scheme-section">
 		<div class="section-title">Visual Theme</div>
 		<div class="color-buttons">
-			{#each Object.keys(colorPalettes) as scheme}
+			{#each Object.keys(colorPalettes) as scheme (scheme)}
 				<button
 					class="color-btn color-{scheme}"
 					class:active={colorScheme === scheme}
