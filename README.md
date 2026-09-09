@@ -1,38 +1,48 @@
-# sv
+# Trill Symbiont
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Trill Symbiont is a collaborative music-making app built with SvelteKit. It combines
+interactive Tone.js instruments with a Three.js physics scene, Discord authentication, and
+shared sessions stored in Cloudflare D1 through Drizzle ORM.
 
-## Creating a project
+## Setup
 
-If you're seeing this, you've probably already done this step. Congrats!
+This project uses npm.
 
-```sh
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+```bash
+npm install
+cp .dev.vars.example .dev.vars
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+The development server listens on `http://localhost:2600`. Add Discord OAuth credentials to
+`.dev.vars` when working on authentication. Plain Vite development can run without D1; database
+features require Wrangler and the configured `DB` binding.
 
-To create a production version of your app:
+## Verification
 
-```sh
+```bash
+npm run lint
+npm run check
+npm run test:unit -- --run
+npm run test:e2e
 npm run build
 ```
 
-You can preview the production build with `npm run preview`.
+## Database migrations
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+The schema is in `src/lib/server/db/schema.ts`. Existing files in `migrations/` are immutable
+because Wrangler tracks applied D1 migrations by filename. After changing the schema, generate
+and test a new migration:
+
+```bash
+npm run db:generate
+npm run db:migrate:local
+```
+
+Production migrations are applied separately with `npm run db:migrate` after review. Do not use
+the deprecated `drizzle/` directory.
+
+## Deployment
+
+`npm run build` produces the Cloudflare Pages bundle. Use `npm run preview` to run that bundle
+locally and `npm run deploy` to deploy it with Wrangler.

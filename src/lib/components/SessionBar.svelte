@@ -3,6 +3,8 @@
 	import { addToast } from '$lib/stores/toastStore.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import type { Pathname } from '$app/types';
 
 	type SharedSession = {
 		id: string;
@@ -51,14 +53,20 @@
 		// Update URL without full reload
 		const url = new URL(window.location.href);
 		url.searchParams.set('session', sessionId);
-		goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+		goto(resolve(`${url.pathname}${url.search}` as Pathname), {
+			replaceState: true,
+			noScroll: true
+		});
 	}
 
 	async function leaveSession() {
 		await sessionSync.leave();
 		const url = new URL(window.location.href);
 		url.searchParams.delete('session');
-		goto(url.pathname + url.search, { replaceState: true, noScroll: true });
+		goto(resolve(`${url.pathname}${url.search}` as Pathname), {
+			replaceState: true,
+			noScroll: true
+		});
 	}
 
 	async function joinByCode() {
@@ -130,12 +138,14 @@
 			<div class="session-active">
 				<div class="flex items-center gap-2">
 					<span class="pulse-dot"></span>
-					<span class="text-sm font-medium text-white truncate max-w-[140px]">
+					<span class="max-w-[140px] truncate text-sm font-medium text-white">
 						{sessionSync.sessionName || sessionSync.sessionId}
 					</span>
 					<span
 						class="flex items-center gap-1 rounded-full bg-indigo-600/60 px-2 py-0.5 text-xs text-indigo-200"
-						title="{sessionSync.memberCount} {sessionSync.memberCount === 1 ? 'person' : 'people'} connected"
+						title="{sessionSync.memberCount} {sessionSync.memberCount === 1
+							? 'person'
+							: 'people'} connected"
 					>
 						<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
 							<path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
@@ -146,10 +156,10 @@
 
 				<!-- Member avatars -->
 				{#if sessionSync.members.length > 0}
-					<div class="flex -space-x-2 ml-2">
-						{#each sessionSync.members.slice(0, 5) as member}
+					<div class="ml-2 flex -space-x-2">
+						{#each sessionSync.members.slice(0, 5) as member (member.userId)}
 							<div
-								class="h-6 w-6 rounded-full border-2 border-gray-800 bg-gray-600 overflow-hidden"
+								class="h-6 w-6 overflow-hidden rounded-full border-2 border-gray-800 bg-gray-600"
 								title={member.username}
 							>
 								{#if member.avatar}
@@ -159,14 +169,18 @@
 										class="h-full w-full object-cover"
 									/>
 								{:else}
-									<span class="flex h-full w-full items-center justify-center text-[10px] text-gray-300">
+									<span
+										class="flex h-full w-full items-center justify-center text-[10px] text-gray-300"
+									>
 										{member.username.charAt(0).toUpperCase()}
 									</span>
 								{/if}
 							</div>
 						{/each}
 						{#if sessionSync.members.length > 5}
-							<div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-800 bg-gray-600 text-[10px] text-gray-300">
+							<div
+								class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-800 bg-gray-600 text-[10px] text-gray-300"
+							>
 								+{sessionSync.members.length - 5}
 							</div>
 						{/if}
@@ -188,15 +202,14 @@
 			onclick={toggleExpanded}
 			class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors
 				{sessionSync.connected
-					? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-					: 'bg-indigo-600 text-white hover:bg-indigo-700'}"
+				? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+				: 'bg-indigo-600 text-white hover:bg-indigo-700'}"
 		>
 			{sessionSync.connected ? '⇄ Switch' : '+ Session'}
 		</button>
 
 		<!-- Dropdown -->
 		{#if expanded}
-			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 			<div class="session-dropdown" role="menu" tabindex="-1" onclick={(e) => e.stopPropagation()}>
 				<h3 class="mb-3 text-sm font-semibold text-white">Sessions</h3>
 
@@ -250,19 +263,21 @@
 								onclick={() => joinSession(session.id)}
 								class="flex cursor-pointer items-center justify-between rounded-md p-2 text-left text-sm transition-colors
 									{sessionSync.isInSession(session.id)
-										? 'bg-indigo-900/60 border border-indigo-500'
-										: 'bg-gray-700/50 hover:bg-gray-700 border border-transparent'}"
+									? 'border border-indigo-500 bg-indigo-900/60'
+									: 'border border-transparent bg-gray-700/50 hover:bg-gray-700'}"
 							>
 								<div class="min-w-0 flex-1">
 									<div class="flex items-center gap-2">
 										<span class="truncate font-medium text-gray-200">{session.name}</span>
 										{#if sessionSync.isInSession(session.id)}
-											<span class="rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+											<span
+												class="rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white"
+											>
 												ACTIVE
 											</span>
 										{/if}
 									</div>
-									<div class="flex items-center gap-2 mt-0.5">
+									<div class="mt-0.5 flex items-center gap-2">
 										<span class="font-mono text-xs text-gray-400">{session.id}</span>
 										{#if session.memberCount !== undefined && session.memberCount > 0}
 											<span class="flex items-center gap-0.5 text-xs text-green-400">
@@ -274,7 +289,7 @@
 										{/if}
 									</div>
 								</div>
-								<div class="flex gap-1 ml-2">
+								<div class="ml-2 flex gap-1">
 									<button
 										onclick={(e) => copyLink(session.id, e)}
 										class="rounded px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-gray-600"
@@ -328,7 +343,9 @@
 		border: 1px solid rgb(55, 65, 81);
 		border-radius: 0.75rem;
 		padding: 1rem;
-		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+		box-shadow:
+			0 20px 25px -5px rgba(0, 0, 0, 0.3),
+			0 8px 10px -6px rgba(0, 0, 0, 0.2);
 		z-index: 60;
 	}
 
@@ -342,7 +359,12 @@
 	}
 
 	@keyframes pulse {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.5; }
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
 	}
 </style>

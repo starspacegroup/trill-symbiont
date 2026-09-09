@@ -14,7 +14,6 @@
 	let selectedChord = 'I';
 	let scaleFrequencies: number[] = [];
 	let isSynchronized = true; // Always synchronized - no free mode
-	let showCircleOfFifths = false; // Collapsed by default
 	let masterVolume = 1.0; // Master volume control (max by default)
 	let tempo = 99; // BPM (beats per minute) for sequencer
 	let isSequencerRunning = false;
@@ -33,12 +32,19 @@
 		if (ver <= _lastAppliedVersion) return;
 		_lastAppliedVersion = ver;
 
-		if (remote.selectedKey !== undefined && remote.selectedKey !== selectedKey) selectedKey = remote.selectedKey;
-		if (remote.selectedScale !== undefined && remote.selectedScale !== selectedScale) selectedScale = remote.selectedScale;
-		if (remote.selectedChord !== undefined && remote.selectedChord !== selectedChord) selectedChord = remote.selectedChord;
-		if (remote.masterVolume !== undefined && remote.masterVolume !== masterVolume) masterVolume = remote.masterVolume;
+		if (remote.selectedKey !== undefined && remote.selectedKey !== selectedKey)
+			selectedKey = remote.selectedKey;
+		if (remote.selectedScale !== undefined && remote.selectedScale !== selectedScale)
+			selectedScale = remote.selectedScale;
+		if (remote.selectedChord !== undefined && remote.selectedChord !== selectedChord)
+			selectedChord = remote.selectedChord;
+		if (remote.masterVolume !== undefined && remote.masterVolume !== masterVolume)
+			masterVolume = remote.masterVolume;
 		if (remote.tempo !== undefined && remote.tempo !== tempo) tempo = remote.tempo;
-		if (remote.isSequencerRunning !== undefined && remote.isSequencerRunning !== isSequencerRunning) {
+		if (
+			remote.isSequencerRunning !== undefined &&
+			remote.isSequencerRunning !== isSequencerRunning
+		) {
 			if (remote.isSequencerRunning) playSequencer();
 			else pauseSequencer();
 		}
@@ -52,12 +58,23 @@
 	}
 
 	// Widget layout state
-	type WidgetId = 'master-controls' | 'drum-sequencer' | 'physics-scene' | 'circle-of-fifths' | 'music-grid';
+	type WidgetId =
+		| 'master-controls'
+		| 'drum-sequencer'
+		| 'physics-scene'
+		| 'circle-of-fifths'
+		| 'music-grid';
 	type ColumnId = 'column-1' | 'column-2' | 'column-3' | 'column-4';
-	
+
 	// All available widgets
-	const allWidgets: WidgetId[] = ['master-controls', 'drum-sequencer', 'physics-scene', 'circle-of-fifths', 'music-grid'];
-	
+	const allWidgets: WidgetId[] = [
+		'master-controls',
+		'drum-sequencer',
+		'physics-scene',
+		'circle-of-fifths',
+		'music-grid'
+	];
+
 	// Layout configuration
 	type LayoutPreset = {
 		name: string;
@@ -65,7 +82,7 @@
 		rows: number;
 		description: string;
 	};
-	
+
 	// Generate a unique key for each layout configuration
 	function getLayoutKey(layout: { columns: number | number[]; rows: number }): string {
 		const cols = typeof layout.columns === 'number' ? layout.columns : layout.columns.join('-');
@@ -80,19 +97,29 @@
 		{ name: '2x2 Grid', columns: 2, rows: 2, description: 'Two columns, two rows' },
 		{ name: '3x2 Grid', columns: 3, rows: 2, description: 'Three columns, two rows' },
 		{ name: '2x3 Grid', columns: 2, rows: 3, description: 'Two columns, three rows' },
-		{ name: '3+1 Stack', columns: [3, 1], rows: 2, description: 'Three columns top, one wide bottom' },
+		{
+			name: '3+1 Stack',
+			columns: [3, 1],
+			rows: 2,
+			description: 'Three columns top, one wide bottom'
+		},
 		{ name: '2+3 Stack', columns: [2, 3], rows: 2, description: 'Two columns top, three bottom' },
 		{ name: '4+2 Stack', columns: [4, 2], rows: 2, description: 'Four columns top, two bottom' },
-		{ name: '1+3 Stack', columns: [1, 3], rows: 2, description: 'One wide top, three columns bottom' },
-		{ name: '3+2+1 Stack', columns: [3, 2, 1], rows: 3, description: 'Three, two, then one column' },
+		{
+			name: '1+3 Stack',
+			columns: [1, 3],
+			rows: 2,
+			description: 'One wide top, three columns bottom'
+		},
+		{ name: '3+2+1 Stack', columns: [3, 2, 1], rows: 3, description: 'Three, two, then one column' }
 	];
 
 	let selectedLayout: { columns: number | number[]; rows: number } = { columns: 3, rows: 1 };
 	let showLayoutEditor = false;
-	
+
 	// Store layouts for each configuration (keyed by layout signature)
 	let layoutConfigurations: Record<string, Record<ColumnId, WidgetId[]>> = {};
-	
+
 	let columns: Record<ColumnId, WidgetId[]> = {
 		'column-1': ['master-controls', 'drum-sequencer'],
 		'column-2': ['physics-scene', 'circle-of-fifths'],
@@ -109,7 +136,7 @@
 		if (browser) {
 			// Check if mobile viewport
 			const isMobile = window.innerWidth < 768;
-			
+
 			// Load all saved layout configurations
 			const savedLayoutConfigs = localStorage.getItem('layout-configurations');
 			if (savedLayoutConfigs) {
@@ -193,7 +220,7 @@
 	function applyLayoutPreset(preset: LayoutPreset) {
 		const newLayout = { columns: preset.columns, rows: preset.rows };
 		const newLayoutKey = getLayoutKey(newLayout);
-		
+
 		// Check if we have a saved configuration for this layout
 		if (layoutConfigurations[newLayoutKey]) {
 			// Restore saved configuration
@@ -206,7 +233,7 @@
 			selectedLayout = newLayout;
 			distributeWidgets();
 		}
-		
+
 		saveLayoutConfig();
 		saveLayout();
 	}
@@ -217,17 +244,20 @@
 
 	// Ensure all widgets are visible in the current layout
 	function ensureAllWidgetsVisible() {
-		// Collect all currently placed widgets
+		// Collect all currently placed widgets. Purely local scratch state built
+		// and consumed within this function — never read reactively — so a plain
+		// Set is correct here; SvelteSet would just add tracking overhead.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const placedWidgets = new Set<WidgetId>();
 		for (const columnId of activeColumnIds) {
 			if (columns[columnId]) {
-				columns[columnId].forEach(widget => placedWidgets.add(widget));
+				columns[columnId].forEach((widget) => placedWidgets.add(widget));
 			}
 		}
-		
+
 		// Find missing widgets
-		const missingWidgets = allWidgets.filter(widget => !placedWidgets.has(widget));
-		
+		const missingWidgets = allWidgets.filter((widget) => !placedWidgets.has(widget));
+
 		// Distribute missing widgets among available columns
 		if (missingWidgets.length > 0) {
 			missingWidgets.forEach((widget, index) => {
@@ -237,12 +267,12 @@
 				}
 				columns[targetColumn].push(widget);
 			});
-			
+
 			// Trigger reactivity
 			columns = { ...columns };
 		}
 	}
-	
+
 	// Distribute all widgets intelligently across available columns
 	function distributeWidgets() {
 		// Clear all columns
@@ -250,11 +280,11 @@
 		for (const columnId of columnKeys) {
 			columns[columnId] = [];
 		}
-		
+
 		// Distribute widgets evenly across active columns
 		const numColumns = activeColumnIds.length;
 		const widgetsPerColumn = Math.ceil(allWidgets.length / numColumns);
-		
+
 		allWidgets.forEach((widget, index) => {
 			const columnIndex = Math.floor(index / widgetsPerColumn);
 			if (columnIndex < activeColumnIds.length) {
@@ -265,7 +295,7 @@
 				columns[targetColumn].push(widget);
 			}
 		});
-		
+
 		// Trigger reactivity
 		columns = { ...columns };
 		saveLayout();
@@ -276,28 +306,22 @@
 		const cols = selectedLayout.columns;
 		if (typeof cols === 'number') {
 			// Simple uniform grid
-			return Array.from(
-				{ length: cols },
-				(_, i) => `column-${i + 1}` as ColumnId
-			);
+			return Array.from({ length: cols }, (_, i) => `column-${i + 1}` as ColumnId);
 		} else {
 			// Per-row column configuration - total slots across all rows
 			const totalSlots = cols.reduce((sum, rowCols) => sum + rowCols, 0);
-			return Array.from(
-				{ length: totalSlots },
-				(_, i) => `column-${i + 1}` as ColumnId
-			);
+			return Array.from({ length: totalSlots }, (_, i) => `column-${i + 1}` as ColumnId);
 		}
 	})();
 
 	// Ensure all columns in activeColumnIds exist and all widgets are visible
 	$: {
-		activeColumnIds.forEach(columnId => {
+		activeColumnIds.forEach((columnId) => {
 			if (!columns[columnId]) {
 				columns[columnId] = [];
 			}
 		});
-		
+
 		// Whenever active columns change, ensure all widgets are still visible
 		if (browser && activeColumnIds.length > 0) {
 			ensureAllWidgetsVisible();
@@ -310,7 +334,7 @@
 		let currentSlot = 0;
 		let rowNum = 1;
 		let colStart = 1;
-		
+
 		// Find which row and column this slot belongs to
 		for (let r = 0; r < columnsPerRow.length; r++) {
 			const colsInRow = columnsPerRow[r];
@@ -324,15 +348,11 @@
 			}
 			currentSlot += colsInRow;
 		}
-		
+
 		return '';
 	}
 
 	// Render a widget based on its ID
-	function renderWidget(widgetId: WidgetId, columnId: ColumnId) {
-		return { widgetId, columnId };
-	}
-
 	function handleDragStart(widgetId: WidgetId, columnId: ColumnId) {
 		draggedWidget = widgetId;
 		draggedFromColumn = columnId;
@@ -371,7 +391,7 @@
 	function handleDragLeave(event: DragEvent) {
 		const relatedTarget = event.relatedTarget as HTMLElement;
 		const currentTarget = event.currentTarget as HTMLElement;
-		
+
 		// Only clear if we're actually leaving the column (not entering a child)
 		if (!currentTarget.contains(relatedTarget)) {
 			dragOverColumn = null;
@@ -382,15 +402,15 @@
 	function handleDrop(event: DragEvent, targetColumnId: ColumnId) {
 		event.preventDefault();
 		dragOverColumn = null;
-		
+
 		if (!draggedWidget || !draggedFromColumn || !dropIndicator) {
 			dropIndicator = null;
 			return;
 		}
 
 		// Remove from source column
-		columns[draggedFromColumn] = columns[draggedFromColumn].filter(id => id !== draggedWidget);
-		
+		columns[draggedFromColumn] = columns[draggedFromColumn].filter((id) => id !== draggedWidget);
+
 		// Insert at specific position in target column
 		const targetColumn = [...columns[targetColumnId]];
 		targetColumn.splice(dropIndicator.index, 0, draggedWidget);
@@ -398,9 +418,9 @@
 
 		// Trigger reactivity
 		columns = { ...columns };
-		
+
 		saveLayout();
-		
+
 		draggedWidget = null;
 		draggedFromColumn = null;
 		dropIndicator = null;
@@ -416,8 +436,11 @@
 	// Touch drag handlers for mobile
 	function handleTouchDragOver(event: CustomEvent) {
 		const { clientY, columnElement } = event.detail;
-		const columnId = columnElement.getAttribute('aria-label')?.toLowerCase().replace(' ', '-') as ColumnId;
-		
+		const columnId = columnElement
+			.getAttribute('aria-label')
+			?.toLowerCase()
+			.replace(' ', '-') as ColumnId;
+
 		if (!columnId) return;
 
 		dragOverColumn = columnId;
@@ -441,9 +464,11 @@
 	}
 
 	function handleTouchDrop(event: CustomEvent) {
-		const { clientY } = event.detail;
 		const columnElement = event.target as HTMLElement;
-		const columnId = columnElement.getAttribute('aria-label')?.toLowerCase().replace(' ', '-') as ColumnId;
+		const columnId = columnElement
+			.getAttribute('aria-label')
+			?.toLowerCase()
+			.replace(' ', '-') as ColumnId;
 
 		if (!columnId || !draggedWidget || !draggedFromColumn || !dropIndicator) {
 			dragOverColumn = null;
@@ -452,8 +477,8 @@
 		}
 
 		// Remove from source column
-		columns[draggedFromColumn] = columns[draggedFromColumn].filter(id => id !== draggedWidget);
-		
+		columns[draggedFromColumn] = columns[draggedFromColumn].filter((id) => id !== draggedWidget);
+
 		// Insert at specific position in target column
 		const targetColumn = [...columns[columnId]];
 		targetColumn.splice(dropIndicator.index, 0, draggedWidget);
@@ -461,9 +486,9 @@
 
 		// Trigger reactivity
 		columns = { ...columns };
-		
+
 		saveLayout();
-		
+
 		draggedWidget = null;
 		draggedFromColumn = null;
 		dragOverColumn = null;
@@ -486,10 +511,6 @@
 	function handleChordChange(event: CustomEvent) {
 		selectedChord = event.detail.chord;
 		syncToSession({ selectedChord });
-	}
-
-	function toggleCircleOfFifths() {
-		showCircleOfFifths = !showCircleOfFifths;
 	}
 
 	// Sequencer control functions
@@ -580,24 +601,34 @@
 					<div class="mt-4 rounded-lg bg-gray-800 p-4 shadow-lg">
 						<h3 class="mb-3 text-lg font-semibold">Grid Layout Presets</h3>
 						<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-							{#each layoutPresets as preset}
+							{#each layoutPresets as preset (preset.name)}
 								<button
 									on:click={() => applyLayoutPreset(preset)}
-									class="rounded-lg border-2 p-3 text-left transition-all hover:scale-105 {JSON.stringify(selectedLayout.columns) === JSON.stringify(preset.columns) && selectedLayout.rows === preset.rows
+									class="rounded-lg border-2 p-3 text-left transition-all hover:scale-105 {JSON.stringify(
+										selectedLayout.columns
+									) === JSON.stringify(preset.columns) && selectedLayout.rows === preset.rows
 										? 'border-indigo-500 bg-indigo-900/50'
 										: 'border-gray-600 bg-gray-700/50 hover:border-indigo-400'}"
 								>
 									<div class="flex items-center gap-2">
 										<!-- Grid Icon -->
-										<div class="grid-icon" style="--icon-cols: {typeof preset.columns === 'number' ? preset.columns : Math.max(...preset.columns)}; --icon-rows: {preset.rows};">
+										<div
+											class="grid-icon"
+											style="--icon-cols: {typeof preset.columns === 'number'
+												? preset.columns
+												: Math.max(...preset.columns)}; --icon-rows: {preset.rows};"
+										>
 											{#if typeof preset.columns === 'number'}
-												{#each Array(preset.columns * preset.rows) as _, i}
+												{#each Array.from({ length: preset.columns * preset.rows }, (_, i) => i) as i (i)}
 													<div class="grid-icon-cell"></div>
 												{/each}
 											{:else}
-												{#each preset.columns as rowCols, rowIndex}
-													{#each Array(rowCols) as _, colIndex}
-														<div class="grid-icon-cell variable-grid" style="grid-column: span {Math.max(...preset.columns) / rowCols};"></div>
+												{#each preset.columns as rowCols, rowIndex (rowIndex)}
+													{#each Array.from({ length: rowCols }, (_, colIndex) => colIndex) as colIndex (colIndex)}
+														<div
+															class="grid-icon-cell variable-grid"
+															style="grid-column: span {Math.max(...preset.columns) / rowCols};"
+														></div>
 													{/each}
 												{/each}
 											{/if}
@@ -610,171 +641,194 @@
 								</button>
 							{/each}
 						</div>
-					<div class="mt-3 text-center text-xs text-gray-400">
-						Current: {typeof selectedLayout.columns === 'number' 
-							? `${selectedLayout.columns} column${selectedLayout.columns > 1 ? 's' : ''}` 
-							: `${selectedLayout.columns.join('+')} columns per row`} × {selectedLayout.rows} row{selectedLayout.rows > 1 ? 's' : ''}
-					</div>
+						<div class="mt-3 text-center text-xs text-gray-400">
+							Current: {typeof selectedLayout.columns === 'number'
+								? `${selectedLayout.columns} column${selectedLayout.columns > 1 ? 's' : ''}`
+								: `${selectedLayout.columns.join('+')} columns per row`} × {selectedLayout.rows} row{selectedLayout.rows >
+							1
+								? 's'
+								: ''}
+						</div>
 					</div>
 				{/if}
 			</div>
 		</header>
-		
+
 		<!-- Responsive Grid Layout -->
-		<div class="widgets-grid" style="
-			--grid-columns: {typeof selectedLayout.columns === 'number' ? selectedLayout.columns : Math.max(...selectedLayout.columns)}; 
+		<div
+			class="widgets-grid"
+			style="
+			--grid-columns: {typeof selectedLayout.columns === 'number'
+				? selectedLayout.columns
+				: Math.max(...selectedLayout.columns)};
 			--grid-rows: {selectedLayout.rows};
 			--is-variable: {typeof selectedLayout.columns === 'number' ? 0 : 1};
-		">
+		"
+		>
 			{#each activeColumnIds as columnId, slotIndex (columnId)}
-			<!-- {columnId} -->
-			<div 
-				class="widget-column drop-zone" 
-				class:drag-over={dragOverColumn === columnId}
-				class:has-widgets={columns[columnId]?.length > 0}
-				style="{typeof selectedLayout.columns !== 'number' ? getColumnStyle(slotIndex, selectedLayout.columns) : ''}"
-				on:dragover={(e) => handleDragOver(e, columnId)}
-				on:dragleave={handleDragLeave}
-				on:drop={(e) => handleDrop(e, columnId)}
-				role="region"
-				aria-label="Column {columnId.split('-')[1]}"
-			>
-				{#each columns[columnId] as widgetId, index (widgetId)}
-					{#if dropIndicator?.columnId === columnId && dropIndicator?.index === index}
+				<!-- {columnId} -->
+				<div
+					class="widget-column drop-zone"
+					class:drag-over={dragOverColumn === columnId}
+					class:has-widgets={columns[columnId]?.length > 0}
+					style={typeof selectedLayout.columns !== 'number'
+						? getColumnStyle(slotIndex, selectedLayout.columns)
+						: ''}
+					on:dragover={(e) => handleDragOver(e, columnId)}
+					on:dragleave={handleDragLeave}
+					on:drop={(e) => handleDrop(e, columnId)}
+					role="region"
+					aria-label="Column {columnId.split('-')[1]}"
+				>
+					{#each columns[columnId] as widgetId, index (widgetId)}
+						{#if dropIndicator?.columnId === columnId && dropIndicator?.index === index}
+							<div class="drop-indicator"></div>
+						{/if}
+						{#if widgetId === 'master-controls'}
+							<DraggableWidget
+								id="master-controls"
+								title="🎚️ Master Controls"
+								on:dragstart={() => handleDragStart('master-controls', columnId)}
+								on:dragend={handleDragEnd}
+							>
+								<!-- Master Volume Control -->
+								<div class="mb-4 flex flex-col gap-2">
+									<label for="master-volume" class="text-center text-sm font-medium"
+										>Master Volume</label
+									>
+									<div class="flex items-center gap-3">
+										<span class="text-sm text-gray-400">🔇</span>
+										<input
+											id="master-volume"
+											type="range"
+											min="0"
+											max="1"
+											step="0.01"
+											bind:value={masterVolume}
+											on:input={() => syncToSession({ masterVolume })}
+											class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
+										/>
+										<span class="text-sm text-gray-400">🔊</span>
+									</div>
+									<div class="text-center text-sm text-gray-400">
+										{Math.round(masterVolume * 100)}%
+									</div>
+								</div>
+
+								<!-- Tempo Control -->
+								<div class="flex flex-col gap-2">
+									<label for="tempo" class="text-center text-sm font-medium">Tempo</label>
+									<div class="flex items-center gap-3">
+										<span class="text-sm text-gray-400">🐌</span>
+										<input
+											id="tempo"
+											type="range"
+											min="40"
+											max="240"
+											step="1"
+											bind:value={tempo}
+											on:input={() => syncToSession({ tempo })}
+											class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
+										/>
+										<span class="text-sm text-gray-400">🐇</span>
+									</div>
+									<div class="text-center text-sm text-gray-400">
+										{tempo} BPM
+									</div>
+								</div>
+
+								<!-- Sequencer Controls -->
+								<div class="mt-4 flex flex-col gap-2">
+									<div class="text-center text-sm font-medium">Sequencer</div>
+									<div class="flex items-center justify-center gap-2">
+										<button
+											on:click={togglePlayPause}
+											class="rounded-lg px-4 py-2 text-sm font-medium transition-colors {isSequencerRunning
+												? 'bg-yellow-600 hover:bg-yellow-700'
+												: 'bg-green-600 hover:bg-green-700'}"
+										>
+											{isSequencerRunning ? '⏸ Pause' : '▶ Play'}
+										</button>
+										<button
+											on:click={stopSequencer}
+											class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium transition-colors hover:bg-red-700"
+										>
+											⏹ Stop
+										</button>
+									</div>
+									<div class="text-center text-sm text-gray-400">
+										{isSequencerRunning
+											? '▶ Running'
+											: currentSequenceStep >= 0
+												? '⏸ Paused'
+												: '⏹ Stopped'} - Step {currentSequenceStep >= 0
+											? currentSequenceStep + 1
+											: '-'}/8
+									</div>
+								</div>
+							</DraggableWidget>
+						{:else if widgetId === 'drum-sequencer'}
+							<DraggableWidget
+								id="drum-sequencer"
+								title="🥁 Drum Sequencer"
+								on:dragstart={() => handleDragStart('drum-sequencer', columnId)}
+								on:dragend={handleDragEnd}
+							>
+								<DrumSequencer {tempo} siteIsPlaying={isSequencerRunning} />
+							</DraggableWidget>
+						{:else if widgetId === 'physics-scene'}
+							<DraggableWidget
+								id="physics-scene"
+								title="🌌 Physics Scene"
+								on:dragstart={() => handleDragStart('physics-scene', columnId)}
+								on:dragend={handleDragEnd}
+							>
+								<PhysicsScene
+									{tempo}
+									{scaleFrequencies}
+									siteIsPlaying={isSequencerRunning}
+									siteIsStopped={currentSequenceStep < 0}
+								/>
+							</DraggableWidget>
+						{:else if widgetId === 'circle-of-fifths'}
+							<DraggableWidget
+								id="circle-of-fifths"
+								title="🎵 Circle of Fifths"
+								on:dragstart={() => handleDragStart('circle-of-fifths', columnId)}
+								on:dragend={handleDragEnd}
+							>
+								<CircleOfFifths
+									{selectedKey}
+									{selectedScale}
+									{selectedChord}
+									{isSynchronized}
+									on:keyChange={handleKeyChange}
+									on:scaleChange={handleScaleChange}
+									on:chordChange={handleChordChange}
+								/>
+							</DraggableWidget>
+						{:else if widgetId === 'music-grid'}
+							<DraggableWidget
+								id="music-grid"
+								title="🎹 Music Grid"
+								on:dragstart={() => handleDragStart('music-grid', columnId)}
+							>
+								<MusicGrid
+									{selectedKey}
+									{selectedScale}
+									{scaleFrequencies}
+									{isSynchronized}
+									{masterVolume}
+									{currentSequenceStep}
+									currentChord={selectedChord}
+								/>
+							</DraggableWidget>
+						{/if}
+					{/each}
+					{#if dropIndicator?.columnId === columnId && dropIndicator?.index === columns[columnId].length}
 						<div class="drop-indicator"></div>
 					{/if}
-					{#if widgetId === 'master-controls'}
-						<DraggableWidget 
-							id="master-controls" 
-							title="🎚️ Master Controls"
-							on:dragstart={() => handleDragStart('master-controls', columnId)}
-							on:dragend={handleDragEnd}
-						>
-					<!-- Master Volume Control -->
-					<div class="mb-4 flex flex-col gap-2">
-						<label for="master-volume" class="text-center text-sm font-medium">Master Volume</label>
-						<div class="flex items-center gap-3">
-							<span class="text-sm text-gray-400">🔇</span>
-							<input
-								id="master-volume"
-								type="range"
-								min="0"
-								max="1"
-								step="0.01"
-								bind:value={masterVolume}
-								on:input={() => syncToSession({ masterVolume })}
-								class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
-							/>
-							<span class="text-sm text-gray-400">🔊</span>
-						</div>
-						<div class="text-center text-sm text-gray-400">
-							{Math.round(masterVolume * 100)}%
-						</div>
-					</div>
-
-					<!-- Tempo Control -->
-					<div class="flex flex-col gap-2">
-						<label for="tempo" class="text-center text-sm font-medium">Tempo</label>
-						<div class="flex items-center gap-3">
-							<span class="text-sm text-gray-400">🐌</span>
-							<input
-								id="tempo"
-								type="range"
-								min="40"
-								max="240"
-								step="1"
-								bind:value={tempo}
-								on:input={() => syncToSession({ tempo })}
-								class="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700"
-							/>
-							<span class="text-sm text-gray-400">🐇</span>
-						</div>
-						<div class="text-center text-sm text-gray-400">
-							{tempo} BPM
-						</div>
-					</div>
-
-					<!-- Sequencer Controls -->
-					<div class="mt-4 flex flex-col gap-2">
-						<div class="text-center text-sm font-medium">Sequencer</div>
-						<div class="flex items-center justify-center gap-2">
-							<button
-								on:click={togglePlayPause}
-								class="rounded-lg px-4 py-2 text-sm font-medium transition-colors {isSequencerRunning
-									? 'bg-yellow-600 hover:bg-yellow-700'
-									: 'bg-green-600 hover:bg-green-700'}"
-							>
-								{isSequencerRunning ? '⏸ Pause' : '▶ Play'}
-							</button>
-							<button
-								on:click={stopSequencer}
-								class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium transition-colors hover:bg-red-700"
-							>
-								⏹ Stop
-							</button>
-						</div>
-						<div class="text-center text-sm text-gray-400">
-							{isSequencerRunning ? '▶ Running' : currentSequenceStep >= 0 ? '⏸ Paused' : '⏹ Stopped'} - Step {currentSequenceStep >= 0 ? currentSequenceStep + 1 : '-'}/8
-						</div>
-					</div>
-						</DraggableWidget>
-				{:else if widgetId === 'drum-sequencer'}
-					<DraggableWidget 
-						id="drum-sequencer" 
-						title="🥁 Drum Sequencer"
-						on:dragstart={() => handleDragStart('drum-sequencer', columnId)}
-						on:dragend={handleDragEnd}
-					>
-							<DrumSequencer {tempo} siteIsPlaying={isSequencerRunning} />
-						</DraggableWidget>
-				{:else if widgetId === 'physics-scene'}
-					<DraggableWidget 
-						id="physics-scene" 
-						title="🌌 Physics Scene"
-						on:dragstart={() => handleDragStart('physics-scene', columnId)}
-						on:dragend={handleDragEnd}
-					>
-							<PhysicsScene {tempo} {scaleFrequencies} siteIsPlaying={isSequencerRunning} siteIsStopped={currentSequenceStep < 0} />
-						</DraggableWidget>
-				{:else if widgetId === 'circle-of-fifths'}
-					<DraggableWidget 
-						id="circle-of-fifths" 
-						title="🎵 Circle of Fifths"
-						on:dragstart={() => handleDragStart('circle-of-fifths', columnId)}
-						on:dragend={handleDragEnd}
-					>
-							<CircleOfFifths
-								{selectedKey}
-								{selectedScale}
-								{selectedChord}
-								{isSynchronized}
-								on:keyChange={handleKeyChange}
-								on:scaleChange={handleScaleChange}
-								on:chordChange={handleChordChange}
-							/>
-						</DraggableWidget>
-					{:else if widgetId === 'music-grid'}
-						<DraggableWidget 
-							id="music-grid" 
-							title="🎹 Music Grid"
-							on:dragstart={() => handleDragStart('music-grid', columnId)}
-						>
-							<MusicGrid
-								{selectedKey}
-								{selectedScale}
-								{scaleFrequencies}
-								{isSynchronized}
-								{masterVolume}
-								{currentSequenceStep}
-								currentChord={selectedChord}
-							/>
-						</DraggableWidget>
-					{/if}
-				{/each}
-				{#if dropIndicator?.columnId === columnId && dropIndicator?.index === columns[columnId].length}
-					<div class="drop-indicator"></div>
-				{/if}
-			</div>
+				</div>
 			{/each}
 		</div>
 	</div>
@@ -917,7 +971,8 @@
 	}
 
 	@keyframes pulse {
-		0%, 100% {
+		0%,
+		100% {
 			opacity: 1;
 		}
 		50% {

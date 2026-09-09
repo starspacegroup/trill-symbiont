@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
 
-	const user = $derived(page.data.user as { id: string; username: string; globalName: string | null; avatarUrl: string } | null);
+	const user = $derived(
+		page.data.user as {
+			id: string;
+			username: string;
+			globalName: string | null;
+			avatarUrl: string;
+		} | null
+	);
 </script>
 
 <div class="relative z-50 flex items-center gap-3">
@@ -27,7 +35,7 @@
 		</form>
 	{:else}
 		<a
-			href="/auth/discord"
+			href={resolve('/auth/discord')}
 			class="flex items-center gap-2 rounded-md bg-[#5865F2] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#4752C4]"
 		>
 			<svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
